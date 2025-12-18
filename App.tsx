@@ -176,56 +176,85 @@ const App: React.FC = () => {
     };
   }, []);
 
+  // Fixed handleFileUpload by explicitly casting files to File[] to avoid 'unknown' type errors when passed to reader.readAsDataURL
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const files = e.target.files;
     const canvas = fabricCanvasRef.current;
-    if (!file || !canvas) return;
+    if (!files || files.length === 0 || !canvas) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const imgObj = new Image();
-      imgObj.src = event.target?.result as string;
-      imgObj.onload = () => {
-        const fabricImg = new fabric.FabricImage(imgObj);
+    (Array.from(files) as File[]).forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result;
+        if (typeof result !== 'string') return;
         
-        const maxW = 1000; 
-        const maxH = 800;
-        const scale = Math.min(maxW / fabricImg.width!, maxH / fabricImg.height!, 1);
-        const finalWidth = fabricImg.width! * scale;
-        const finalHeight = fabricImg.height! * scale;
+        const imgObj = new Image();
+        // Fixed image loading by setting the onload handler before setting the src attribute
+        imgObj.onload = () => {
+          const fabricImg = new fabric.FabricImage(imgObj);
+          
+          let scale = 1;
+          const buffer = 200;
 
-        // CRITICAL: We add a 200px buffer (100px each side) to the canvas dimensions
-        // so shadows (which render outside the object) don't get clipped by the canvas edge.
-        const buffer = 200;
-        const canvasW = finalWidth + buffer;
-        const canvasH = finalHeight + buffer;
+          // If this is the very first image being added, set the canvas dimensions
+          if (!hasImage && index === 0) {
+            const maxW = 1000; 
+            const maxH = 800;
+            scale = Math.min(maxW / fabricImg.width!, maxH / fabricImg.height!, 1);
+            const finalWidth = fabricImg.width! * scale;
+            const finalHeight = fabricImg.height! * scale;
 
-        canvas.setDimensions({ width: canvasW, height: canvasH });
-        setCanvasDimensions({ width: canvasW, height: canvasH });
+            const canvasW = finalWidth + buffer;
+            const canvasH = finalHeight + buffer;
 
-        fabricImg.set({
-          left: buffer / 2, // Centering the image in the buffered canvas
-          top: buffer / 2,
-          scaleX: scale,
-          scaleY: scale,
-          selectable: true,
-          shadow: new fabric.Shadow({
-            color: `rgba(0, 0, 0, ${editorState.shadowOpacity})`,
-            blur: editorState.shadowBlur,
-            offsetY: 10,
-          })
-        });
+            canvas.setDimensions({ width: canvasW, height: canvasH });
+            setCanvasDimensions({ width: canvasW, height: canvasH });
+            
+            fabricImg.set({
+              left: buffer / 2,
+              top: buffer / 2,
+              scaleX: scale,
+              scaleY: scale,
+            });
+            setHasImage(true);
+          } else {
+            // For subsequent images, scale them to fit within the existing canvas but keep them manageable
+            const canvasW = canvas.width;
+            const canvasH = canvas.height;
+            const targetW = canvasW * 0.6;
+            const targetH = canvasH * 0.6;
+            
+            scale = Math.min(targetW / fabricImg.width!, targetH / fabricImg.height!, 1);
+            
+            // Offset subsequent images so they don't perfectly overlap
+            const offset = (index + 1) * 30;
+            fabricImg.set({
+              left: (canvasW - (fabricImg.width! * scale)) / 2 + offset,
+              top: (canvasH - (fabricImg.height! * scale)) / 2 + offset,
+              scaleX: scale,
+              scaleY: scale,
+            });
+          }
 
-        canvas.clear();
-        canvas.add(fabricImg);
-        canvas.setActiveObject(fabricImg);
-        canvas.renderAll();
-        
-        setHasImage(true);
-        forceRefresh();
+          fabricImg.set({
+            selectable: true,
+            shadow: new fabric.Shadow({
+              color: `rgba(0, 0, 0, ${editorState.shadowOpacity})`,
+              blur: editorState.shadowBlur,
+              offsetY: 10,
+            })
+          });
+
+          canvas.add(fabricImg);
+          canvas.setActiveObject(fabricImg);
+          canvas.renderAll();
+          forceRefresh();
+        };
+        imgObj.src = result;
       };
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    });
+
     e.target.value = '';
   };
 
@@ -240,8 +269,6 @@ const App: React.FC = () => {
     const canvas = fabricCanvasRef.current;
     if (!canvas) return;
     
-    // To export nicely, we calculate the bounding box of all objects
-    // or just the buffered area. For better results, we use a multiplier.
     const dataURL = canvas.toDataURL({
       format: 'png',
       quality: 1,
@@ -293,7 +320,14 @@ const App: React.FC = () => {
         hasSelection={!!selectedObject}
       />
       
-      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        className="hidden" 
+        accept="image/*" 
+        multiple 
+        onChange={handleFileUpload} 
+      />
 
       <div className="flex flex-1 overflow-hidden">
         <SidebarLeft onApplyTemplate={handleApplyTemplate} />
@@ -326,7 +360,7 @@ const App: React.FC = () => {
               </div>
               <div className="text-center px-6">
                 <p className="text-xl font-bold text-slate-200">Snap a Screenshot Here</p>
-                <p className="text-sm text-slate-500 mt-2">Upload any image to start creating professional layouts</p>
+                <p className="text-sm text-slate-500 mt-2">Upload one or more images to start creating professional layouts</p>
               </div>
             </div>
           )}
@@ -335,10 +369,10 @@ const App: React.FC = () => {
             <div className="absolute bottom-8 px-6 py-3 bg-slate-950/80 backdrop-blur-2xl rounded-2xl text-[11px] text-slate-400 border border-slate-800 shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4">
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="font-bold text-slate-200 uppercase tracking-tighter">Live Canvas Buffer Active</span>
+                <span className="font-bold text-slate-200 uppercase tracking-tighter">Multi-Object Canvas Active</span>
               </div>
               <div className="w-px h-4 bg-slate-800" />
-              <span>Canvas is larger than image to prevent shadow clipping</span>
+              <span>Composition mode enabled</span>
             </div>
           )}
         </main>
