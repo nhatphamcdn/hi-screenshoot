@@ -1,35 +1,33 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import * as fabric from 'fabric';
 import { 
-  Plus, 
   Download, 
   Image as ImageIcon, 
   Type, 
   Square, 
   Circle as CircleIcon,
-  Layout, 
-  Settings2, 
-  Palette,
-  Monitor,
-  Smartphone,
-  Layers,
   Trash2,
-  Copy,
-  ChevronDown
+  Upload
 } from 'lucide-react';
+import SidebarLeft from './components/SidebarLeft';
 import SidebarRight from './components/SidebarRight';
 import Toolbar from './components/Toolbar';
-import { EditorState } from './types';
+import { EditorState, Template } from './types';
 
 type DrawingTool = 'none' | 'rect' | 'circle';
 
 const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
   const [selectedObject, setSelectedObject] = useState<fabric.FabricObject | null>(null);
   const [activeTool, setActiveTool] = useState<DrawingTool>('none');
-  const [refresh, setRefresh] = useState(0); // State to force re-render of child components
+  const [refresh, setRefresh] = useState(0); 
+  const [hasImage, setHasImage] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeToolRef = useRef<DrawingTool>('none');
@@ -44,23 +42,43 @@ const App: React.FC = () => {
   const [editorState, setEditorState] = useState<EditorState>({
     backgroundColor: '#6366f1',
     backgroundGradient: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-    padding: 60,
-    borderRadius: 16,
-    shadowBlur: 30,
-    shadowOpacity: 0.3,
+    padding: 64, 
+    borderRadius: 24,
+    shadowBlur: 40,
+    shadowOpacity: 0.4,
     aspectRatio: 'Auto',
     showBrowserFrame: true,
   });
 
   const forceRefresh = () => setRefresh(prev => prev + 1);
 
+  // Calculate the zoom scale to fit the wrapper (canvas + padding) into the viewport
+  useEffect(() => {
+    const updateScale = () => {
+      if (!containerRef.current || canvasDimensions.width === 0) return;
+
+      const viewportWidth = containerRef.current.clientWidth - 100; 
+      const viewportHeight = containerRef.current.clientHeight - 100;
+
+      const totalWidth = canvasDimensions.width + (editorState.padding * 2);
+      const totalHeight = canvasDimensions.height + (editorState.padding * 2);
+
+      const scale = Math.min(viewportWidth / totalWidth, viewportHeight / totalHeight, 1);
+      setZoomScale(scale);
+    };
+
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, [canvasDimensions, editorState.padding, hasImage]);
+
   useEffect(() => {
     if (!canvasRef.current) return;
 
     const canvas = new fabric.Canvas(canvasRef.current, {
-      width: 800,
-      height: 600,
-      backgroundColor: '#f1f5f9',
+      width: 400,
+      height: 300,
+      backgroundColor: 'transparent',
       preserveObjectStacking: true,
     });
 
@@ -97,8 +115,8 @@ const App: React.FC = () => {
           ...commonProps,
           width: 0,
           height: 0,
-          rx: 4,
-          ry: 4,
+          rx: 8,
+          ry: 8,
         });
       } else if (tool === 'circle') {
         currentShape.current = new fabric.Circle({
@@ -109,7 +127,6 @@ const App: React.FC = () => {
 
       if (currentShape.current) {
         canvas.add(currentShape.current);
-        canvas.bringObjectToFront(currentShape.current);
       }
     });
 
@@ -170,17 +187,28 @@ const App: React.FC = () => {
       imgObj.src = event.target?.result as string;
       imgObj.onload = () => {
         const fabricImg = new fabric.FabricImage(imgObj);
-        const scaleX = (canvas.width! - editorState.padding * 2) / fabricImg.width!;
-        const scaleY = (canvas.height! - editorState.padding * 2) / fabricImg.height!;
-        const scale = Math.min(scaleX, scaleY, 1);
         
+        const maxW = 1000; 
+        const maxH = 800;
+        const scale = Math.min(maxW / fabricImg.width!, maxH / fabricImg.height!, 1);
+        const finalWidth = fabricImg.width! * scale;
+        const finalHeight = fabricImg.height! * scale;
+
+        // CRITICAL: We add a 200px buffer (100px each side) to the canvas dimensions
+        // so shadows (which render outside the object) don't get clipped by the canvas edge.
+        const buffer = 200;
+        const canvasW = finalWidth + buffer;
+        const canvasH = finalHeight + buffer;
+
+        canvas.setDimensions({ width: canvasW, height: canvasH });
+        setCanvasDimensions({ width: canvasW, height: canvasH });
+
         fabricImg.set({
-          left: canvas.width! / 2,
-          top: canvas.height! / 2,
-          originX: 'center',
-          originY: 'center',
+          left: buffer / 2, // Centering the image in the buffered canvas
+          top: buffer / 2,
           scaleX: scale,
           scaleY: scale,
+          selectable: true,
           shadow: new fabric.Shadow({
             color: `rgba(0, 0, 0, ${editorState.shadowOpacity})`,
             blur: editorState.shadowBlur,
@@ -188,10 +216,12 @@ const App: React.FC = () => {
           })
         });
 
+        canvas.clear();
         canvas.add(fabricImg);
-        canvas.sendObjectToBack(fabricImg);
         canvas.setActiveObject(fabricImg);
         canvas.renderAll();
+        
+        setHasImage(true);
         forceRefresh();
       };
     };
@@ -199,9 +229,19 @@ const App: React.FC = () => {
     e.target.value = '';
   };
 
+  const handleApplyTemplate = (template: Template) => {
+    setEditorState(prev => ({
+      ...prev,
+      ...template.config
+    }));
+  };
+
   const handleExport = () => {
     const canvas = fabricCanvasRef.current;
     if (!canvas) return;
+    
+    // To export nicely, we calculate the bounding box of all objects
+    // or just the buffered area. For better results, we use a multiplier.
     const dataURL = canvas.toDataURL({
       format: 'png',
       quality: 1,
@@ -216,12 +256,14 @@ const App: React.FC = () => {
   const addText = () => {
     const canvas = fabricCanvasRef.current;
     if (!canvas) return;
-    const text = new fabric.IText('Double click to edit', {
-      left: 100,
+    const text = new fabric.IText('New Caption', {
+      left: canvas.width / 2 - 100,
       top: 100,
       fontFamily: 'Inter',
-      fontSize: 24,
+      fontSize: 42,
       fill: '#ffffff',
+      fontWeight: 'bold',
+      textAlign: 'center'
     });
     canvas.add(text);
     canvas.bringObjectToFront(text);
@@ -254,25 +296,51 @@ const App: React.FC = () => {
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Removed SidebarLeft (Preset Templates) as requested */}
-        
-        <main className={`flex-1 flex flex-col items-center justify-center p-8 bg-slate-900 overflow-auto relative ${activeTool !== 'none' ? 'cursor-crosshair' : ''}`}>
+        <SidebarLeft onApplyTemplate={handleApplyTemplate} />
+
+        <main ref={containerRef} className="flex-1 flex flex-col items-center justify-center bg-slate-900 overflow-hidden relative">
+          
           <div 
             id="canvas-wrapper" 
-            className="shadow-2xl transition-all duration-300 relative group"
+            className={`transition-all duration-300 ease-out relative ${!hasImage ? 'hidden' : 'block'}`}
             style={{ 
               background: editorState.backgroundGradient || editorState.backgroundColor,
               padding: `${editorState.padding}px`,
-              borderRadius: '12px',
-              border: '1px solid rgba(255,255,255,0.1)'
+              borderRadius: `${editorState.borderRadius}px`,
+              boxShadow: '0 30px 60px -12px rgba(0,0,0,0.6)',
+              transform: `scale(${zoomScale})`,
+              transformOrigin: 'center center'
             }}
           >
-            <canvas ref={canvasRef} className="rounded-sm" />
+            {/* The actual Fabric canvas */}
+            <canvas ref={canvasRef} />
           </div>
+
+          {!hasImage && (
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full max-w-lg aspect-video rounded-3xl border-2 border-dashed border-slate-700 bg-slate-800/40 hover:bg-slate-800/60 hover:border-indigo-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-5 group"
+            >
+              <div className="w-20 h-20 rounded-2xl bg-slate-700/50 group-hover:bg-indigo-600/20 flex items-center justify-center transition-all group-hover:scale-110">
+                <Upload size={36} className="text-slate-400 group-hover:text-indigo-400" />
+              </div>
+              <div className="text-center px-6">
+                <p className="text-xl font-bold text-slate-200">Snap a Screenshot Here</p>
+                <p className="text-sm text-slate-500 mt-2">Upload any image to start creating professional layouts</p>
+              </div>
+            </div>
+          )}
           
-          <div className="mt-8 px-4 py-2 bg-slate-800/50 backdrop-blur rounded-full text-xs text-slate-400 border border-slate-700">
-            {activeTool !== 'none' ? `Drawing Mode: Click and drag to create a ${activeTool}` : 'Upload images, draw shapes, or add text to begin'}
-          </div>
+          {hasImage && (
+            <div className="absolute bottom-8 px-6 py-3 bg-slate-950/80 backdrop-blur-2xl rounded-2xl text-[11px] text-slate-400 border border-slate-800 shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-bold text-slate-200 uppercase tracking-tighter">Live Canvas Buffer Active</span>
+              </div>
+              <div className="w-px h-4 bg-slate-800" />
+              <span>Canvas is larger than image to prevent shadow clipping</span>
+            </div>
+          )}
         </main>
 
         <SidebarRight 
