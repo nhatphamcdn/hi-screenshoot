@@ -6,14 +6,14 @@ import {
   Settings2, 
   Type, 
   Maximize, 
-  Layers,
-  Layout,
-  ChevronRight,
-  Check,
-  X,
-  Plus,
-  Image as ImageIcon,
-  Wand2 as ShadowIcon
+  Layers, 
+  Layout, 
+  ChevronRight, 
+  Check, 
+  X, 
+  Plus, 
+  Image as ImageIcon, 
+  Wand2 as ShadowIcon 
 } from 'lucide-react';
 import { EditorState } from '../types';
 
@@ -36,27 +36,66 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
     }
   };
 
+  const getObjectClipPath = (obj: fabric.FabricObject) => {
+    const common = {
+      originX: 'center',
+      originY: 'center',
+      absolutePositioned: false,
+    };
+
+    if (obj.type === 'rect' || obj.type === 'image') {
+      const rx = (obj as any)._cornerRadius || 0;
+      return new fabric.Rect({
+        ...common,
+        width: obj.width,
+        height: obj.height,
+        rx: rx,
+        ry: rx,
+      });
+    } else if (obj.type === 'circle') {
+      return new fabric.Circle({
+        ...common,
+        radius: (obj as any).radius,
+      });
+    }
+    return null;
+  };
+
   const updateObjectShadow = (updates: Partial<fabric.TShadowOptions>) => {
     if (selectedObject && fabricCanvas) {
-      const currentShadow = selectedObject.shadow as fabric.Shadow;
-      const defaultOptions: fabric.TShadowOptions = {
-        color: 'rgba(0,0,0,0.5)',
-        blur: 0,
-        offsetX: 0,
-        offsetY: 0,
-      };
+      const isInside = (selectedObject as any)._isInsideShadow;
+      
+      if (isInside) {
+        // In "Inside" mode, 'blur' controls the stroke width
+        // and 'color' controls the stroke color
+        if (updates.blur !== undefined) {
+          selectedObject.set('strokeWidth', updates.blur);
+        }
+        if (updates.color !== undefined) {
+          selectedObject.set('stroke', updates.color);
+        }
+      } else {
+        const currentShadow = selectedObject.shadow as fabric.Shadow;
+        const defaultOptions: fabric.TShadowOptions = {
+          color: 'rgba(0,0,0,0.5)',
+          blur: 0,
+          offsetX: 0,
+          offsetY: 0,
+        };
 
-      const baseOptions = currentShadow ? {
-        color: currentShadow.color,
-        blur: currentShadow.blur,
-        offsetX: currentShadow.offsetX,
-        offsetY: currentShadow.offsetY,
-      } : defaultOptions;
+        const baseOptions = currentShadow ? {
+          color: currentShadow.color,
+          blur: currentShadow.blur,
+          offsetX: currentShadow.offsetX,
+          offsetY: currentShadow.offsetY,
+        } : defaultOptions;
 
-      selectedObject.set('shadow', new fabric.Shadow({
-        ...baseOptions,
-        ...updates
-      }));
+        selectedObject.set('shadow', new fabric.Shadow({
+          ...baseOptions,
+          ...updates
+        }));
+      }
+      
       fabricCanvas.renderAll();
       onObjectChange?.();
     }
@@ -70,20 +109,57 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
   };
 
   const updateImageBorderRadius = (value: number) => {
-    if (selectedObject && selectedObject.type === 'image' && fabricCanvas) {
-      const clipPath = new fabric.Rect({
-        originX: 'center',
-        originY: 'center',
-        rx: value,
-        ry: value,
-        width: selectedObject.width,
-        height: selectedObject.height,
-      });
-      selectedObject.set('clipPath', clipPath);
+    if (selectedObject && fabricCanvas) {
       (selectedObject as any)._cornerRadius = value;
+      // Re-apply clipPath which handles both border radius and inner shadow clipping
+      selectedObject.set('clipPath', getObjectClipPath(selectedObject));
       fabricCanvas.renderAll();
       onObjectChange?.();
     }
+  };
+
+  const toggleShadowPlacement = (isInside: boolean) => {
+    if (!selectedObject || !fabricCanvas) return;
+    
+    (selectedObject as any)._isInsideShadow = isInside;
+    
+    if (isInside) {
+      // Switch to INNER shadow simulation
+      // 1. Save current shadow color/blur if exists
+      const color = selectedObject.shadow instanceof fabric.Shadow ? selectedObject.shadow.color : 'rgba(0,0,0,0.3)';
+      const blur = selectedObject.shadow instanceof fabric.Shadow ? selectedObject.shadow.blur : 20;
+
+      selectedObject.set({
+        shadow: null,
+        stroke: color,
+        strokeWidth: blur,
+        strokeUniform: true,
+        // We MUST use a clipPath to hide the part of the stroke that falls outside
+        clipPath: getObjectClipPath(selectedObject)
+      });
+    } else {
+      // Switch back to OUTER shadow
+      const color = typeof selectedObject.stroke === 'string' ? selectedObject.stroke : 'rgba(0,0,0,0.4)';
+      const blur = selectedObject.strokeWidth || 40;
+
+      selectedObject.set({
+        stroke: 'transparent',
+        strokeWidth: 0,
+        shadow: new fabric.Shadow({
+          color: color,
+          blur: blur,
+          offsetX: 0,
+          offsetY: 10
+        }),
+        // Only keep clipPath if it's an image with border radius
+        clipPath: selectedObject.type === 'image' || (selectedObject as any)._cornerRadius > 0 
+          ? getObjectClipPath(selectedObject) 
+          : null
+      });
+    }
+    
+    fabricCanvas.renderAll();
+    onObjectChange?.();
   };
 
   const GRADIENTS = [
@@ -115,51 +191,15 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
     }
   };
 
-  const fillValue = selectedObject?.fill;
-  const hasFill = !!selectedObject && fillValue !== 'transparent' && fillValue !== '' && fillValue !== null;
-  
-  const strokeWidth = selectedObject?.strokeWidth || 0;
-  const hasStroke = !!selectedObject && strokeWidth > 0;
-
   const currentCornerRadius = (selectedObject as any)?._cornerRadius || 0;
-  const currentShadow = selectedObject?.shadow as fabric.Shadow | undefined;
   const isInsideShadow = (selectedObject as any)?._isInsideShadow || false;
-
-  const toggleShadowPlacement = (isInside: boolean) => {
-    if (!selectedObject || !fabricCanvas) return;
-    
-    (selectedObject as any)._isInsideShadow = isInside;
-    
-    if (isInside) {
-      // Simulate Inside Shadow:
-      // We use a high stroke width with transparency and a centered shadow
-      selectedObject.set({
-        stroke: 'rgba(0,0,0,0.05)',
-        strokeWidth: 20,
-        shadow: new fabric.Shadow({
-          color: 'rgba(0,0,0,0.4)',
-          blur: 30,
-          offsetX: 0,
-          offsetY: 0
-        })
-      });
-    } else {
-      // Revert to normal outside shadow
-      selectedObject.set({
-        stroke: 'transparent',
-        strokeWidth: 0,
-        shadow: new fabric.Shadow({
-          color: 'rgba(0,0,0,0.4)',
-          blur: 40,
-          offsetX: 0,
-          offsetY: 10
-        })
-      });
-    }
-    
-    fabricCanvas.renderAll();
-    onObjectChange?.();
-  };
+  
+  // Resolve current visual shadow properties
+  const currentShadow = selectedObject?.shadow as fabric.Shadow | undefined;
+  const displayBlur = isInsideShadow ? (selectedObject?.strokeWidth || 0) : (currentShadow?.blur || 0);
+  const displayColor = isInsideShadow 
+    ? (typeof selectedObject?.stroke === 'string' ? selectedObject.stroke : '#000000') 
+    : (currentShadow?.color?.toString() || '#000000');
 
   return (
     <aside className="w-80 bg-slate-900 border-l border-slate-800 flex flex-col z-40 overflow-y-auto custom-scrollbar">
@@ -248,11 +288,11 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
               </h3>
             </div>
 
-            {isImage && (
+            {(isImage || isShape) && (
               <div className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold">
-                    <span>Corner Radius</span>
+                    <span>Object Rounding</span>
                     <span className="font-mono text-indigo-400">{currentCornerRadius}px</span>
                   </div>
                   <input 
@@ -289,95 +329,63 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
               </div>
             )}
 
-            {isShape && (
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Fill Color</label>
-                    <button 
-                      onClick={() => updateObjectProperty('fill', hasFill ? 'transparent' : '#6366f1')}
-                      className={`p-1.5 rounded-md transition-all ${hasFill ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-600 hover:bg-slate-800'}`}
-                    >
-                      {hasFill ? <Check size={14} /> : <X size={14} />}
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 h-9 bg-slate-800 rounded-md flex items-center px-3 border border-slate-700 relative overflow-hidden">
-                      <input 
-                        type="color" 
-                        disabled={!hasFill}
-                        onChange={(e) => updateObjectProperty('fill', e.target.value)}
-                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full disabled:cursor-not-allowed"
-                        value={typeof selectedObject.fill === 'string' && hasFill ? (selectedObject.fill as string) : '#6366f1'}
-                      />
-                      <div className="w-full flex items-center gap-2">
-                        <div 
-                          className="w-4 h-4 rounded-sm border border-slate-600" 
-                          style={{ backgroundColor: !hasFill ? 'transparent' : (selectedObject.fill as string) }}
-                        />
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          {!hasFill ? 'NONE' : (selectedObject.fill as string)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Object Shadow Section */}
+            {/* Object Shadow/Glow Section */}
             <div className="space-y-6 border-t border-slate-800 pt-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
                   <ShadowIcon size={14} />
-                  Shadow
+                  Shadow & Glow
                 </h3>
                 <button 
                   onClick={() => {
-                    if (currentShadow) {
-                      updateObjectProperty('shadow', null);
+                    const hasAny = currentShadow || isInsideShadow;
+                    if (hasAny) {
+                      selectedObject.set({ shadow: null, stroke: 'transparent', strokeWidth: 0, clipPath: selectedObject.type === 'image' ? getObjectClipPath(selectedObject) : null });
+                      (selectedObject as any)._isInsideShadow = false;
+                      fabricCanvas?.renderAll();
+                      onObjectChange?.();
                     } else {
-                      updateObjectShadow({ blur: 20, color: 'rgba(0,0,0,0.5)', offsetY: 10 });
+                      toggleShadowPlacement(false);
                     }
                   }}
-                  className={`p-1.5 rounded-md transition-all ${currentShadow ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-600 hover:bg-slate-800'}`}
+                  className={`p-1.5 rounded-md transition-all ${(currentShadow || isInsideShadow) ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-600 hover:bg-slate-800'}`}
                 >
-                  {currentShadow ? <Check size={14} /> : <Plus size={14} />}
+                  {(currentShadow || isInsideShadow) ? <Check size={14} /> : <Plus size={14} />}
                 </button>
               </div>
 
-              {currentShadow && (
+              {(currentShadow || isInsideShadow) && (
                 <div className="space-y-5 animate-in slide-in-from-top-2 duration-200">
                   <div className="bg-slate-800/50 p-1 rounded-lg flex border border-slate-700">
                     <button 
                       onClick={() => toggleShadowPlacement(false)}
                       className={`flex-1 py-1.5 text-[10px] font-bold uppercase rounded-md transition-all ${!isInsideShadow ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
                     >
-                      Outside
+                      Outside (Shadow)
                     </button>
                     <button 
                       onClick={() => toggleShadowPlacement(true)}
                       className={`flex-1 py-1.5 text-[10px] font-bold uppercase rounded-md transition-all ${isInsideShadow ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
                     >
-                      Inside
+                      Inside (Glow)
                     </button>
                   </div>
 
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold">
-                        <span>Blur Radius</span>
-                        <span className="font-mono text-indigo-400">{currentShadow.blur}px</span>
+                        <span>{isInsideShadow ? 'Glow Intensity' : 'Blur Radius'}</span>
+                        <span className="font-mono text-indigo-400">{Math.round(displayBlur)}px</span>
                       </div>
                       <input 
-                        type="range" min="0" max="120" step="1" 
-                        value={currentShadow.blur}
+                        type="range" min="0" max="150" step="1" 
+                        value={displayBlur}
                         onChange={(e) => updateObjectShadow({ blur: parseInt(e.target.value) })}
                         className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                       />
                     </div>
 
-                    {!isInsideShadow && (
+                    {!isInsideShadow && currentShadow && (
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold">
@@ -407,17 +415,17 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                     )}
 
                     <div className="space-y-2">
-                      <label className="text-[10px] text-slate-500 font-bold uppercase">Color & Opacity</label>
+                      <label className="text-[10px] text-slate-500 font-bold uppercase">Color & Theme</label>
                       <div className="flex items-center gap-3">
                         <div className="w-full h-10 bg-slate-800 rounded-md border border-slate-700 relative overflow-hidden flex items-center px-3 hover:border-slate-600 transition-colors">
                           <input 
                             type="color" 
                             onChange={(e) => updateObjectShadow({ color: e.target.value })}
                             className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                            value={currentShadow.color?.toString().startsWith('#') ? currentShadow.color.toString() : '#000000'}
+                            value={displayColor.startsWith('#') ? displayColor : '#000000'}
                           />
-                          <div className="w-5 h-5 rounded-full border border-slate-600 mr-3" style={{ backgroundColor: currentShadow.color?.toString() }} />
-                          <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Change shadow color</span>
+                          <div className="w-5 h-5 rounded-full border border-slate-600 mr-3 shadow-inner" style={{ backgroundColor: displayColor }} />
+                          <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Change effect color</span>
                         </div>
                       </div>
                     </div>
@@ -446,8 +454,8 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
 
       <div className="p-4 bg-slate-950/50 border-t border-slate-800 shrink-0">
         <div className="p-4 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 text-[11px] text-slate-400 leading-relaxed shadow-inner">
-          <p className="font-bold text-indigo-300 mb-2 uppercase tracking-wide">Dynamic Scaling</p>
-          {isInsideShadow ? "Inside shadows use an inner glow effect. Best for a 'pushed-in' or 'beveled' look." : "Outer shadows are now safe from clipping. The canvas buffer automatically handles large offsets."}
+          <p className="font-bold text-indigo-300 mb-2 uppercase tracking-wide">Inner Glow Logic</p>
+          {isInsideShadow ? "The glow is restricted to the inside using a clipPath. Adjust 'Intensity' to grow the inner stroke." : "Outer shadows cast a classic drop shadow that renders outside the object's path."}
         </div>
       </div>
     </aside>
