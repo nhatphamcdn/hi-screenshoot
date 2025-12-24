@@ -13,7 +13,7 @@ import {
   Sparkles,
   Loader2
 } from 'lucide-react';
-import SidebarLeft from './components/SidebarLeft';
+// SidebarLeft removed
 import SidebarRight from './components/SidebarRight';
 import Toolbar from './components/Toolbar';
 import { EditorState, Template } from './types';
@@ -565,13 +565,6 @@ const App: React.FC = () => {
     }
   };
 
-  const handleApplyTemplate = (template: Template) => {
-    setEditorState(prev => ({
-      ...prev,
-      ...template.config
-    }));
-  };
-
   const handleExport = () => {
     const canvas = fabricCanvasRef.current;
     if (!canvas) return;
@@ -754,7 +747,7 @@ const App: React.FC = () => {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        <SidebarLeft onApplyTemplate={handleApplyTemplate} />
+        {/* SidebarLeft removed */}
 
         <main ref={containerRef} className="flex-1 flex flex-col items-center justify-center bg-slate-900 overflow-hidden relative">
           

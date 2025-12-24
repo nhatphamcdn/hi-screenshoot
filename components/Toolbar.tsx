@@ -7,7 +7,6 @@ import {
   Square, 
   Circle as CircleIcon,
   Trash2,
-  Share2,
   ArrowRight,
   Sparkles,
   Ghost
@@ -124,10 +123,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
             <Trash2 size={20} />
           </button>
         )}
-        <button className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:bg-slate-800 rounded-md transition-colors text-sm font-medium">
-          <Share2 size={18} />
-          <span>Share</span>
-        </button>
         <button 
           onClick={onExport}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md transition-all text-sm font-bold shadow-lg shadow-indigo-600/20"
