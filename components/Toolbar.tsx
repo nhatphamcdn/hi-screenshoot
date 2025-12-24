@@ -12,8 +12,11 @@ import {
   RotateCcw,
   PanelRight,
   Menu,
-  X
+  X,
+  Zap,
+  Crown
 } from 'lucide-react';
+import { AIModel } from '../types';
 
 interface ToolbarProps {
   onUpload: () => void;
@@ -31,6 +34,8 @@ interface ToolbarProps {
   onReset?: () => void;
   onToggleSidebar?: () => void;
   isSidebarOpen?: boolean;
+  aiModel?: AIModel;
+  onSetAiModel?: (model: AIModel) => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({ 
@@ -48,7 +53,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onToggleAiTransparentBg,
   onReset,
   onToggleSidebar,
-  isSidebarOpen
+  isSidebarOpen,
+  aiModel = 'flash',
+  onSetAiModel
 }) => {
   const isImageSelected = hasSelection && selectionType === 'image';
 
@@ -84,6 +91,26 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
         {onGenerateImage && (
              <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-1 bg-zinc-800/50 rounded-md p-1 border border-zinc-700/50 ml-2'}`}>
+                {/* Model Selector */}
+                {onSetAiModel && (
+                    <div className="flex bg-zinc-900 rounded border border-zinc-700 p-0.5 mr-1">
+                        <button
+                            onClick={() => onSetAiModel('flash')}
+                            className={`p-1 rounded transition-colors ${aiModel === 'flash' ? 'bg-zinc-700 text-primary-300' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            title="Flash (Fast, Lower Limits)"
+                        >
+                            <Zap size={14} />
+                        </button>
+                        <button
+                            onClick={() => onSetAiModel('pro')}
+                            className={`p-1 rounded transition-colors ${aiModel === 'pro' ? 'bg-zinc-700 text-yellow-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            title="Pro (High Quality, Your Key)"
+                        >
+                            <Crown size={14} />
+                        </button>
+                    </div>
+                )}
+
                 <button 
                   onClick={onGenerateImage}
                   className={`flex items-center justify-center rounded transition-colors ${

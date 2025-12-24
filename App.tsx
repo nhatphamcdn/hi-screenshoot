@@ -13,12 +13,15 @@ import {
   Sparkles,
   Loader2,
   GripHorizontal,
-  GripVertical
+  GripVertical,
+  ZoomIn,
+  ZoomOut,
+  Maximize
 } from 'lucide-react';
 // SidebarLeft removed
 import SidebarRight from './components/SidebarRight';
 import Toolbar from './components/Toolbar';
-import { EditorState, Template } from './types';
+import { EditorState, Template, AIModel } from './types';
 
 type DrawingTool = 'none' | 'rect' | 'circle' | 'arrow';
 
@@ -43,9 +46,11 @@ const App: React.FC = () => {
   const [refresh, setRefresh] = useState(0); 
   const [hasImage, setHasImage] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
+  const [isAutoZoom, setIsAutoZoom] = useState(true);
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiTransparentBg, setAiTransparentBg] = useState(false);
+  const [aiModel, setAiModel] = useState<AIModel>('flash');
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -53,6 +58,11 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const activeToolRef = useRef<DrawingTool>('none');
+
+  // Resolve API Key with fallback
+  const resolvedApiKey = useMemo(() => {
+    return process.env.API_KEY || (process.env as any).GEMINI_API_KEY || '';
+  }, []);
 
   // Auto-hide sidebar on mobile initially
   useEffect(() => {
@@ -68,11 +78,6 @@ const App: React.FC = () => {
     if (window.innerWidth < 1024) {
         setIsSidebarOpen(false);
     }
-
-    // Optional: Auto-collapse when resizing from desktop to mobile
-    // Not strictly necessary but good for UX testing
-    // window.addEventListener('resize', handleResize);
-    // return () => window.removeEventListener('resize', handleResize);
   }, []);
   
   useEffect(() => {
@@ -122,6 +127,8 @@ const App: React.FC = () => {
     setCanvasDimensions({ width: 0, height: 0 });
     setEditorState(INITIAL_EDITOR_STATE);
     setZoomScale(1);
+    setIsAutoZoom(true);
+    setAiModel('flash');
     
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -146,6 +153,8 @@ const App: React.FC = () => {
 
   // Calculate the zoom scale to fit the wrapper (canvas + padding) into the viewport
   useEffect(() => {
+    if (!isAutoZoom) return;
+
     const updateScale = () => {
       if (!containerRef.current) return;
 
@@ -167,7 +176,21 @@ const App: React.FC = () => {
     updateScale();
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
-  }, [canvasDimensions, editorState.padding, editorState.customWidth, editorState.customHeight, hasImage, isSidebarOpen]);
+  }, [canvasDimensions, editorState.padding, editorState.customWidth, editorState.customHeight, hasImage, isSidebarOpen, isAutoZoom]);
+
+  const handleZoomIn = () => {
+    setIsAutoZoom(false);
+    setZoomScale(prev => Math.min(prev + 0.1, 5));
+  };
+
+  const handleZoomOut = () => {
+    setIsAutoZoom(false);
+    setZoomScale(prev => Math.max(prev - 0.1, 0.1));
+  };
+
+  const handleZoomFit = () => {
+    setIsAutoZoom(true);
+  };
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -463,31 +486,45 @@ const App: React.FC = () => {
   };
 
   const handleGenerateImage = async () => {
-    // START LOADING IMMEDIATELY
     setIsGenerating(true);
-
-    // Give React a moment to render the loader before potential heavy work
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    // STRICT instruction to avoid checkerboards
-    // We demand a flat color so we can key it out.
+    // Determine Logic based on AI Model
+    const isPro = aiModel === 'pro';
+    const activeModelName = isPro ? 'gemini-3-pro-image-preview' : 'gemini-2.5-flash-image';
+
+    // KEY SELECTION LOGIC for Pro Model
+    if (isPro) {
+        try {
+            if ((window as any).aistudio) {
+                const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+                if (!hasKey) {
+                    await (window as any).aistudio.openSelectKey();
+                    // Assuming success if we proceed, though a real app might re-check
+                }
+            } else {
+                 console.warn("AI Studio client not found, proceeding with default behavior might fail for Pro model.");
+            }
+        } catch (err) {
+            console.error("Key selection failed:", err);
+            setIsGenerating(false);
+            return;
+        }
+    }
+
     const backgroundInstruction = aiTransparentBg 
       ? "Replace the background with a uniform, solid MAGENTA color (Hex #FF00FF). Ensure the background is one single flat color with no gradients, no shadows, and no patterns. Do not generate a checkerboard."
       : "Replace the background with pure white (#FFFFFF). No shadows added to the background.";
 
-    // Refined prompt to preserve object identity while strictly removing background/border and ensuring high quality
     const promptText = `Edit the provided reference image. Keep the main foreground object exactly the same in shape, color, texture, and position. Remove the rounded border/frame completely. ${backgroundInstruction} Ultra-high-resolution 8K output, sharp focus, photorealistic. No changes to product design, no additional objects.`;
 
-    // Logic to find an image even if not currently selected
     let targetImage = selectedObject;
-    
-    // If no object selected, or selected object is not an image, try to find one on canvas
     if (!targetImage || targetImage.type !== 'image') {
         const canvas = fabricCanvasRef.current;
         if (canvas) {
             const images = canvas.getObjects().filter(obj => obj.type === 'image');
             if (images.length > 0) {
-                targetImage = images[images.length - 1]; // Use the top-most image
+                targetImage = images[images.length - 1]; 
             }
         }
     }
@@ -495,13 +532,12 @@ const App: React.FC = () => {
     const isEditing = targetImage && targetImage.type === 'image';
     
     try {
-       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+       // IMPORTANT: Create new instance just before call to pick up fresh key if selected via UI
+       const ai = new GoogleGenAI({ apiKey: resolvedApiKey });
        
        const parts: any[] = [];
 
        if (isEditing && targetImage) {
-           // For Image-to-Image editing
-           // We extract the base64 from the image object
            const dataUrl = targetImage.toDataURL({ format: 'png' });
            const base64Data = dataUrl.split(',')[1];
            
@@ -515,19 +551,26 @@ const App: React.FC = () => {
 
        parts.push({ text: promptText });
 
+       // Config differs between models
+       const config: any = {};
+       
+       if (isPro) {
+           config.imageConfig = {
+               aspectRatio: '1:1',
+               imageSize: '2K' // Pro supports higher resolution
+           };
+       } else {
+           config.imageConfig = {
+               aspectRatio: '1:1'
+           };
+       }
+
        const response = await ai.models.generateContent({
-           model: 'gemini-2.5-flash-image',
-           contents: {
-               parts: parts
-           },
-           config: {
-               imageConfig: {
-                   aspectRatio: '1:1'
-               }
-           }
+           model: activeModelName,
+           contents: { parts: parts },
+           config: config
        });
 
-       // Extract the image from the response parts
        let foundImage = false;
        if (response.candidates && response.candidates[0].content && response.candidates[0].content.parts) {
          for (const part of response.candidates[0].content.parts) {
@@ -549,7 +592,6 @@ const App: React.FC = () => {
                    };
 
                    if (aiTransparentBg) {
-                       // Client-side Chroma Key Removal
                        const tempCanvas = document.createElement('canvas');
                        tempCanvas.width = imgObj.width;
                        tempCanvas.height = imgObj.height;
@@ -560,23 +602,18 @@ const App: React.FC = () => {
                            const imageData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
                            const data = imageData.data;
                            
-                           // Auto-detect the background color from the top-left pixel.
-                           // This creates a dynamic key based on what the AI actually generated.
                            const keyR = data[0];
                            const keyG = data[1];
                            const keyB = data[2];
 
-                           // Define thresholds for hard removal and soft blending
-                           // Adjusted to prevent eating into the subject but removing artifacts
-                           const hardThreshold = 35; // Pixels closer than this are fully removed
-                           const softThreshold = 75; // Pixels between hard and soft are blended
+                           const hardThreshold = 35;
+                           const softThreshold = 75;
                            
                            for (let i = 0; i < data.length; i += 4) {
                                const r = data[i];
                                const g = data[i + 1];
                                const b = data[i + 2];
                                
-                               // Calculate Euclidean distance from the key color
                                const distance = Math.sqrt(
                                    Math.pow(r - keyR, 2) + 
                                    Math.pow(g - keyG, 2) + 
@@ -584,11 +621,8 @@ const App: React.FC = () => {
                                );
 
                                if (distance < hardThreshold) {
-                                   data[i + 3] = 0; // Fully transparent
+                                   data[i + 3] = 0; 
                                } else if (distance < softThreshold) {
-                                   // Linear ramp for simple anti-aliasing
-                                   // distance = hard -> alpha = 0
-                                   // distance = soft -> alpha = 255
                                    const alpha = ((distance - hardThreshold) / (softThreshold - hardThreshold)) * 255;
                                    data[i + 3] = alpha;
                                }
@@ -603,12 +637,10 @@ const App: React.FC = () => {
                            };
                            processedImg.src = tempCanvas.toDataURL();
                        } else {
-                           // Fallback if canvas context fails
                            addImageObjectToCanvas(imgObj, !hasImage);
                            cleanupOldImage();
                        }
                    } else {
-                       // Standard flow
                        addImageObjectToCanvas(imgObj, !hasImage);
                        cleanupOldImage();
                    }
@@ -629,15 +661,22 @@ const App: React.FC = () => {
         console.error("AI Generation Error:", e);
         
         const errorMessage = e.message || JSON.stringify(e);
-        // Handle potential permission errors if environment key is invalid
         const isPermissionDenied = 
             e.status === 403 || 
             errorMessage.includes('403') || 
             errorMessage.includes('PERMISSION_DENIED');
         
+        const isQuotaExceeded = 
+            e.status === 429 ||
+            errorMessage.includes('429') ||
+            errorMessage.includes('QUOTA_EXCEEDED') ||
+            errorMessage.includes('RESOURCE_EXHAUSTED');
+        
         if (isPermissionDenied && (window as any).aistudio) {
              await (window as any).aistudio.openSelectKey(); 
              alert("Please select a valid paid project API key and try again.");
+        } else if (isQuotaExceeded) {
+             alert(`Quota Exceeded for model ${activeModelName}.\n\nTry switching to Pro model which allows using your own paid key, or check your billing.`);
         } else {
              alert("Image generation failed. " + errorMessage);
         }
@@ -856,7 +895,7 @@ const App: React.FC = () => {
                </div>
                <div className="text-center space-y-2">
                  <h3 className="text-xl font-bold text-white">Generating Image</h3>
-                 <p className="text-zinc-400 text-sm">Processing with AI...</p>
+                 <p className="text-zinc-400 text-sm">Processing with {aiModel === 'pro' ? 'Gemini Pro' : 'Gemini Flash'}...</p>
                  <p className="text-xs text-zinc-500 mt-2">Generating Magenta Mask & Removing Background...</p>
                </div>
            </div>
@@ -879,6 +918,8 @@ const App: React.FC = () => {
         onReset={handleReset}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         isSidebarOpen={isSidebarOpen}
+        aiModel={aiModel}
+        onSetAiModel={setAiModel}
       />
       
       <input 
@@ -952,14 +993,38 @@ const App: React.FC = () => {
           )}
           
           {hasImage && (
-            <div className="absolute bottom-28 md:bottom-8 px-6 py-3 bg-zinc-950/80 backdrop-blur-2xl rounded-2xl text-[11px] text-zinc-400 border border-zinc-800 shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 mx-4 pointer-events-none">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="font-bold text-zinc-200 uppercase tracking-tighter">Canvas Active</span>
-              </div>
-              <div className="w-px h-4 bg-zinc-800 hidden sm:block" />
-              <span className="hidden sm:inline">Composition mode enabled</span>
-            </div>
+            <>
+               {/* Canvas Active Badge */}
+               <div className="absolute bottom-28 md:bottom-8 px-6 py-3 bg-zinc-950/80 backdrop-blur-2xl rounded-2xl text-[11px] text-zinc-400 border border-zinc-800 shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 mx-4 pointer-events-none">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="font-bold text-zinc-200 uppercase tracking-tighter">Canvas Active</span>
+                  </div>
+                  <div className="w-px h-4 bg-zinc-800 hidden sm:block" />
+                  <span className="hidden sm:inline">Composition mode enabled</span>
+               </div>
+               
+               {/* Zoom Controls */}
+               <div className="absolute bottom-28 md:bottom-8 left-4 z-50 flex items-center gap-1 p-1 rounded-lg bg-zinc-900/90 border border-zinc-800 shadow-xl backdrop-blur-md">
+                    <button onClick={handleZoomOut} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors" title="Zoom Out">
+                        <ZoomOut size={16} />
+                    </button>
+                    <span className="w-12 text-center text-xs font-mono text-zinc-300 select-none">
+                        {Math.round(zoomScale * 100)}%
+                    </span>
+                    <button onClick={handleZoomIn} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors" title="Zoom In">
+                        <ZoomIn size={16} />
+                    </button>
+                    <div className="w-px h-4 bg-zinc-800 mx-1" />
+                    <button 
+                        onClick={handleZoomFit} 
+                        className={`p-1.5 rounded-md transition-colors ${isAutoZoom ? 'text-primary-400 bg-primary-500/10' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+                        title="Fit to Screen"
+                    >
+                        <Maximize size={16} />
+                    </button>
+               </div>
+            </>
           )}
         </main>
         

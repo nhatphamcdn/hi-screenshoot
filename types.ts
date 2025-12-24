@@ -18,3 +18,5 @@ export type Template = {
   preview: string;
   config: Partial<EditorState>;
 };
+
+export type AIModel = 'flash' | 'pro';
