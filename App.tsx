@@ -265,6 +265,10 @@ const App: React.FC = () => {
         // Store original stroke props for Sidebar logic
         (arrow as any)._originalStroke = '#6366f1';
         (arrow as any)._originalStrokeWidth = 4;
+        
+        // Tag as arrow for sidebar editing
+        (arrow as any).customType = 'arrow';
+        (arrow as any).arrowStyle = 'end';
 
         canvas.add(arrow);
         canvas.setActiveObject(arrow);

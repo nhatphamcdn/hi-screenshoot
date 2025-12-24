@@ -24,7 +24,11 @@ import {
   AlignCenter,
   AlignRight,
   Italic,
-  Underline
+  Underline,
+  ArrowRight,
+  ArrowLeft,
+  MoveHorizontal,
+  Minus
 } from 'lucide-react';
 import { EditorState } from '../types';
 
@@ -189,6 +193,86 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
     onObjectChange?.();
   };
 
+  const updateArrowStyle = (style: 'start' | 'end' | 'both' | 'none') => {
+    if (!fabricCanvas || !selectedObject || selectedObject.type !== 'path') return;
+    const obj = selectedObject as fabric.Path;
+    
+    // Safety check: Is this one of our arrows?
+    if ((obj as any).customType !== 'arrow') return;
+
+    const path = obj.path;
+    // Assuming simple structure where first M is start and first L is end of the SHAFT
+    if (!path || path.length < 2) return;
+    
+    // Note: path coordinates are relative to the bounding box/pathOffset
+    // We will extract them, reconstruct the path string, and create a new object.
+    const start = path[0]; 
+    const end = path[1];
+
+    if (start[0] !== 'M' || end[0] !== 'L') return;
+
+    const x1 = start[1];
+    const y1 = start[2];
+    const x2 = end[1];
+    const y2 = end[2];
+
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    const headLength = 20;
+
+    let newPathData = `M ${x1} ${y1} L ${x2} ${y2}`;
+
+    if (style === 'end' || style === 'both') {
+         const xLeft = x2 - headLength * Math.cos(angle - Math.PI / 6);
+         const yLeft = y2 - headLength * Math.sin(angle - Math.PI / 6);
+         const xRight = x2 - headLength * Math.cos(angle + Math.PI / 6);
+         const yRight = y2 - headLength * Math.sin(angle + Math.PI / 6);
+         newPathData += ` M ${x2} ${y2} L ${xLeft} ${yLeft} M ${x2} ${y2} L ${xRight} ${yRight}`;
+    }
+
+    if (style === 'start' || style === 'both') {
+         const xLeft = x1 + headLength * Math.cos(angle - Math.PI / 6);
+         const yLeft = y1 + headLength * Math.sin(angle - Math.PI / 6);
+         const xRight = x1 + headLength * Math.cos(angle + Math.PI / 6);
+         const yRight = y1 + headLength * Math.sin(angle + Math.PI / 6);
+         newPathData += ` M ${x1} ${y1} L ${xLeft} ${yLeft} M ${x1} ${y1} L ${xRight} ${yRight}`;
+    }
+
+    // Capture old center to preserve position
+    const oldCenter = obj.getCenterPoint();
+
+    // Create new object
+    const newPath = new fabric.Path(newPathData, {
+       left: obj.left,
+       top: obj.top,
+       stroke: obj.stroke,
+       strokeWidth: obj.strokeWidth,
+       fill: obj.fill,
+       strokeLineCap: obj.strokeLineCap,
+       strokeLineJoin: obj.strokeLineJoin,
+       strokeUniform: obj.strokeUniform,
+       scaleX: obj.scaleX,
+       scaleY: obj.scaleY,
+       rotation: obj.rotation,
+       opacity: obj.opacity,
+       shadow: obj.shadow,
+       // Maintain metadata
+       customType: 'arrow',
+       arrowStyle: style
+    } as any);
+
+    // Reposition to match center
+    // Because adding arrowheads changes dimensions, we align by center to avoid big jumps.
+    newPath.set({ originX: 'center', originY: 'center' });
+    newPath.setPositionByOrigin(oldCenter, 'center', 'center');
+    newPath.set({ originX: 'left', originY: 'top' }); // Reset to default origin if needed
+
+    fabricCanvas.remove(obj);
+    fabricCanvas.add(newPath);
+    fabricCanvas.setActiveObject(newPath);
+    fabricCanvas.renderAll();
+    onObjectChange?.();
+  };
+
   const handleSizeChange = (dim: 'width' | 'height', value: number) => {
     if (!selectedObject || !fabricCanvas) return;
     
@@ -231,6 +315,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
   const isText = selectedObject?.type === 'i-text';
   const isImage = selectedObject?.type === 'image';
   const isPath = selectedObject?.type === 'path';
+  const isArrow = (selectedObject as any)?.customType === 'arrow';
 
   const bringForward = () => {
     if (fabricCanvas && selectedObject) {
@@ -448,6 +533,36 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                 </div>
               </div>
             </div>
+            
+            {isArrow && (
+              <div className="space-y-4 border-t border-slate-800 pt-4">
+                 <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                   <ArrowRight size={12} />
+                   Arrow Style
+                 </h4>
+                 <div className="flex bg-slate-800 rounded-md border border-slate-700 h-9 p-1">
+                      {[
+                        { id: 'none', icon: Minus, label: 'Line' },
+                        { id: 'start', icon: ArrowLeft, label: 'Start' },
+                        { id: 'end', icon: ArrowRight, label: 'End' },
+                        { id: 'both', icon: MoveHorizontal, label: 'Both' }
+                      ].map((style) => (
+                          <button
+                              key={style.id}
+                              onClick={() => updateArrowStyle(style.id as any)}
+                              className={`flex-1 rounded flex items-center justify-center transition-all ${
+                                  (selectedObject as any).arrowStyle === style.id 
+                                  ? 'bg-indigo-600 text-white shadow-sm' 
+                                  : 'text-slate-400 hover:text-slate-200'
+                              }`}
+                              title={style.label}
+                          >
+                              <style.icon size={14} />
+                          </button>
+                      ))}
+                  </div>
+              </div>
+            )}
 
             {isText && (
               <section className="space-y-4 border-t border-slate-800 pt-4">
