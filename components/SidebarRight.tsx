@@ -395,6 +395,11 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                 Frame Style
               </h3>
               <div className="grid grid-cols-3 gap-2">
+                <button
+                    onClick={() => setState(s => ({ ...s, backgroundColor: '#ffffff', backgroundGradient: '' }))}
+                    className="h-10 rounded-md border border-slate-700 bg-white hover:scale-105 transition-transform"
+                    title="White Background"
+                />
                 {GRADIENTS.map((grad, i) => (
                   <button
                     key={i}

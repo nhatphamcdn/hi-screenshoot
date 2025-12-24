@@ -65,8 +65,8 @@ const App: React.FC = () => {
   const startPoint = useRef<{ x: number, y: number } | null>(null);
 
   const [editorState, setEditorState] = useState<EditorState>({
-    backgroundColor: '#6366f1',
-    backgroundGradient: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+    backgroundColor: '#ffffff',
+    backgroundGradient: '',
     padding: 64, 
     borderRadius: 24,
     shadowBlur: 40,
@@ -453,6 +453,17 @@ const App: React.FC = () => {
                 imgObj.onload = () => {
                    // Add generated image to canvas
                    addImageObjectToCanvas(imgObj, !hasImage);
+                   
+                   // Remove the original source image from the canvas if it exists
+                   if (targetImage && fabricCanvasRef.current) {
+                      fabricCanvasRef.current.remove(targetImage);
+                      // If the removed image was selected, clear the selection state
+                      if (selectedObject === targetImage) {
+                         setSelectedObject(null);
+                         fabricCanvasRef.current.discardActiveObject();
+                      }
+                      fabricCanvasRef.current.requestRenderAll();
+                   }
                 };
                 imgObj.src = imgSrc;
                 foundImage = true;
@@ -497,12 +508,76 @@ const App: React.FC = () => {
   const handleExport = () => {
     const canvas = fabricCanvasRef.current;
     if (!canvas) return;
+
+    // 1. Setup high-res multiplier
+    const multiplier = 4; // 4x for high quality
     
-    const dataURL = canvas.toDataURL({
-      format: 'png',
-      quality: 1,
-      multiplier: 2,
-    });
+    // 2. Get the content as a canvas element (preserves transparency)
+    const contentCanvas = canvas.toCanvasElement(multiplier);
+
+    // 3. Define dimensions
+    const padding = editorState.padding;
+    const radius = editorState.borderRadius;
+    const innerWidth = canvas.width || 0;
+    const innerHeight = canvas.height || 0;
+    const totalWidth = innerWidth + (padding * 2);
+    const totalHeight = innerHeight + (padding * 2);
+    
+    // 4. Create Export Canvas
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = totalWidth * multiplier;
+    exportCanvas.height = totalHeight * multiplier;
+    const ctx = exportCanvas.getContext('2d');
+    if (!ctx) return;
+
+    // 5. Scale context to match logical coordinate system
+    ctx.scale(multiplier, multiplier);
+    
+    // 6. Draw Background (Rounded Rect)
+    const drawRoundedRect = (x: number, y: number, w: number, h: number, r: number) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    };
+
+    drawRoundedRect(0, 0, totalWidth, totalHeight, radius);
+    ctx.clip(); // Ensure sharp clipping at borders
+
+    // Fill Background
+    if (editorState.backgroundGradient) {
+      // Parse basic linear gradient from the CSS strings used
+      // Format: "linear-gradient(135deg, #color1 0%, #color2 100%)"
+      const gradMatch = editorState.backgroundGradient.match(/linear-gradient\((\d+)deg,\s*(#[a-fA-F0-9]+)\s*0%,\s*(#[a-fA-F0-9]+)\s*100%\)/i);
+      if (gradMatch) {
+         // Canvas gradients are defined by start/end points. 
+         // 135deg is top-left to bottom-right.
+         const gradient = ctx.createLinearGradient(0, 0, totalWidth, totalHeight);
+         gradient.addColorStop(0, gradMatch[2]);
+         gradient.addColorStop(1, gradMatch[3]);
+         ctx.fillStyle = gradient;
+      } else {
+         ctx.fillStyle = editorState.backgroundColor;
+      }
+    } else {
+      ctx.fillStyle = editorState.backgroundColor;
+    }
+    ctx.fill();
+
+    // 7. Draw Content
+    // contentCanvas is scaled by multiplier, but since ctx is also scaled, 
+    // we use logical dimensions for destination.
+    ctx.drawImage(contentCanvas, padding, padding, innerWidth, innerHeight);
+
+    // 8. Download
+    const dataURL = exportCanvas.toDataURL('image/png');
     const link = document.createElement('a');
     link.download = 'snapstyle-export.png';
     link.href = dataURL;
