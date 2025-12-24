@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as fabric from 'fabric';
 import { 
   Palette, 
@@ -41,6 +41,64 @@ interface SidebarRightProps {
   onObjectChange?: () => void;
   refresh: number;
 }
+
+const DebouncedNumberInput = ({ 
+    value, 
+    onChange, 
+    label, 
+    className 
+}: { 
+    value: number; 
+    onChange: (val: number) => void; 
+    label: string; 
+    className?: string 
+}) => {
+    const [localValue, setLocalValue] = useState<string>(value.toString());
+    const [isEditing, setIsEditing] = useState(false);
+
+    // Sync from props when not editing
+    useEffect(() => {
+        if (!isEditing) {
+            setLocalValue(value.toString());
+        }
+    }, [value, isEditing]);
+
+    // Debounce updates to parent
+    useEffect(() => {
+        if (!isEditing) return;
+
+        const handler = setTimeout(() => {
+            const num = parseInt(localValue);
+            if (!isNaN(num) && num !== value) {
+                onChange(num);
+            }
+        }, 500);
+
+        return () => clearTimeout(handler);
+    }, [localValue, isEditing, onChange, value]);
+
+    return (
+        <div className="space-y-1.5">
+            <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">{label}</label>
+            <input 
+                type="number"
+                value={localValue}
+                onChange={(e) => {
+                    setIsEditing(true);
+                    setLocalValue(e.target.value);
+                }}
+                onBlur={() => {
+                    setIsEditing(false);
+                    const num = parseInt(localValue);
+                    if (!isNaN(num) && num !== value) {
+                        onChange(num);
+                    }
+                }}
+                className={className}
+            />
+        </div>
+    );
+};
 
 const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedObject, fabricCanvas, onObjectChange, refresh }) => {
   const [lockAspect, setLockAspect] = useState(true);
@@ -449,24 +507,18 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
               </h3>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
-                   <div className="space-y-1.5">
-                      <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Canvas W</label>
-                      <input 
-                        type="number"
-                        value={canvasWidth}
-                        onChange={(e) => setState(s => ({ ...s, customWidth: parseInt(e.target.value) || 1 }))}
-                        className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-slate-300 focus:border-indigo-500 transition-colors"
-                      />
-                   </div>
-                   <div className="space-y-1.5">
-                      <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Canvas H</label>
-                      <input 
-                        type="number"
-                        value={canvasHeight}
-                        onChange={(e) => setState(s => ({ ...s, customHeight: parseInt(e.target.value) || 1 }))}
-                        className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-slate-300 focus:border-indigo-500 transition-colors"
-                      />
-                   </div>
+                   <DebouncedNumberInput
+                      label="Canvas W"
+                      value={canvasWidth}
+                      onChange={(val) => setState(s => ({ ...s, customWidth: val }))}
+                      className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-slate-300 focus:border-indigo-500 transition-colors"
+                   />
+                   <DebouncedNumberInput
+                      label="Canvas H"
+                      value={canvasHeight}
+                      onChange={(val) => setState(s => ({ ...s, customHeight: val }))}
+                      className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-slate-300 focus:border-indigo-500 transition-colors"
+                   />
                 </div>
 
                 <div className="space-y-2">
