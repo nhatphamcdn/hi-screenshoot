@@ -4,14 +4,11 @@ import {
   Palette, 
   Settings2, 
   Type, 
-  Maximize, 
   Layers, 
   Layout, 
   ChevronRight, 
   Check, 
-  X, 
   Plus, 
-  Image as ImageIcon, 
   Wand2 as ShadowIcon,
   Move,
   Lock,
@@ -29,7 +26,12 @@ import {
   ArrowLeft,
   MoveHorizontal,
   Minus,
-  Ban
+  Ban,
+  MoveVertical,
+  Eye,
+  EyeOff,
+  Image as ImageIcon,
+  Trash2
 } from 'lucide-react';
 import { EditorState } from '../types';
 
@@ -56,24 +58,20 @@ const DebouncedNumberInput = ({
     const [localValue, setLocalValue] = useState<string>(value.toString());
     const [isEditing, setIsEditing] = useState(false);
 
-    // Sync from props when not editing
     useEffect(() => {
         if (!isEditing) {
             setLocalValue(value.toString());
         }
     }, [value, isEditing]);
 
-    // Debounce updates to parent
     useEffect(() => {
         if (!isEditing) return;
-
         const handler = setTimeout(() => {
             const num = parseInt(localValue);
             if (!isNaN(num) && num !== value) {
                 onChange(num);
             }
         }, 500);
-
         return () => clearTimeout(handler);
     }, [localValue, isEditing, onChange, value]);
 
@@ -101,7 +99,34 @@ const DebouncedNumberInput = ({
 };
 
 const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedObject, fabricCanvas, onObjectChange, refresh }) => {
+  const [activeTab, setActiveTab] = useState<'scene' | 'layers' | 'properties'>('scene');
   const [lockAspect, setLockAspect] = useState(true);
+  const [layers, setLayers] = useState<fabric.FabricObject[]>([]);
+  const prevSelectedRef = useRef<fabric.FabricObject | null>(null);
+
+  // Sync active tab with selection state
+  useEffect(() => {
+    const prev = prevSelectedRef.current;
+    if (selectedObject && !prev) {
+        // New selection, auto-switch to properties if not already on layers (user might want to stay on layers)
+        if (activeTab !== 'layers') {
+            setActiveTab('properties');
+        }
+    } else if (!selectedObject && prev) {
+        // Selection lost
+        if (activeTab === 'properties') {
+            setActiveTab('scene');
+        }
+    }
+    prevSelectedRef.current = selectedObject;
+  }, [selectedObject, activeTab]);
+
+  // Sync layers list
+  useEffect(() => {
+    if (fabricCanvas) {
+      setLayers([...fabricCanvas.getObjects()]);
+    }
+  }, [fabricCanvas, refresh]);
 
   const updateObjectProperty = (prop: string, value: any) => {
     if (selectedObject && fabricCanvas) {
@@ -111,10 +136,8 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
     }
   };
 
-  // Helper to handle fill color with alpha channel
   const updateFillAlpha = (alpha: number) => {
     if (!selectedObject || !fabricCanvas) return;
-    
     const fill = selectedObject.fill;
     if (typeof fill === 'string' && fill !== 'transparent') {
       const color = new fabric.Color(fill);
@@ -131,7 +154,6 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
       originY: 'center',
       absolutePositioned: false,
     };
-
     if (obj.type === 'image') {
       const rx = (obj as any)._cornerRadius || 0;
       return new fabric.Rect({
@@ -148,36 +170,17 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
   const updateObjectShadow = (updates: Partial<fabric.TShadowOptions>) => {
     if (selectedObject && fabricCanvas) {
       const isInside = (selectedObject as any)._isInsideShadow;
-      
       if (isInside) {
-        if (updates.blur !== undefined) {
-          selectedObject.set('strokeWidth', updates.blur);
-        }
-        if (updates.color !== undefined) {
-          selectedObject.set('stroke', updates.color);
-        }
+        if (updates.blur !== undefined) selectedObject.set('strokeWidth', updates.blur);
+        if (updates.color !== undefined) selectedObject.set('stroke', updates.color);
       } else {
         const currentShadow = selectedObject.shadow as fabric.Shadow;
-        const defaultOptions: fabric.TShadowOptions = {
-          color: 'rgba(0,0,0,0.5)',
-          blur: 0,
-          offsetX: 0,
-          offsetY: 0,
-        };
-
+        const defaultOptions: fabric.TShadowOptions = { color: 'rgba(0,0,0,0.5)', blur: 0, offsetX: 0, offsetY: 0 };
         const baseOptions = currentShadow ? {
-          color: currentShadow.color,
-          blur: currentShadow.blur,
-          offsetX: currentShadow.offsetX,
-          offsetY: currentShadow.offsetY,
+          color: currentShadow.color, blur: currentShadow.blur, offsetX: currentShadow.offsetX, offsetY: currentShadow.offsetY,
         } : defaultOptions;
-
-        selectedObject.set('shadow', new fabric.Shadow({
-          ...baseOptions,
-          ...updates
-        }));
+        selectedObject.set('shadow', new fabric.Shadow({ ...baseOptions, ...updates }));
       }
-      
       fabricCanvas.renderAll();
       onObjectChange?.();
     }
@@ -193,13 +196,11 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
   const updateRounding = (value: number) => {
     if (selectedObject && fabricCanvas) {
       (selectedObject as any)._cornerRadius = value;
-      
       if (selectedObject.type === 'rect') {
         selectedObject.set({ rx: value, ry: value });
       } else if (selectedObject.type === 'image') {
         selectedObject.set('clipPath', getObjectClipPath(selectedObject));
       }
-      
       fabricCanvas.renderAll();
       onObjectChange?.();
     }
@@ -207,47 +208,29 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
 
   const toggleShadowPlacement = (isInside: boolean) => {
     if (!selectedObject || !fabricCanvas) return;
-    
     (selectedObject as any)._isInsideShadow = isInside;
-    
     if (isInside) {
       if (!(selectedObject as any)._originalStroke) {
         (selectedObject as any)._originalStroke = selectedObject.stroke;
         (selectedObject as any)._originalStrokeWidth = selectedObject.strokeWidth;
       }
-
       const color = selectedObject.shadow instanceof fabric.Shadow ? selectedObject.shadow.color : 'rgba(0,0,0,0.3)';
       const blur = selectedObject.shadow instanceof fabric.Shadow ? selectedObject.shadow.blur : 20;
-
       selectedObject.set({
-        shadow: null,
-        stroke: color,
-        strokeWidth: blur,
-        strokeUniform: true,
+        shadow: null, stroke: color, strokeWidth: blur, strokeUniform: true,
         clipPath: selectedObject.type === 'image' ? getObjectClipPath(selectedObject) : null
       });
     } else {
       const restoredStroke = (selectedObject as any)._originalStroke || 'transparent';
       const restoredStrokeWidth = (selectedObject as any)._originalStrokeWidth || 0;
-
-      const color = typeof selectedObject.stroke === 'string' && selectedObject.stroke !== 'transparent' 
-        ? selectedObject.stroke 
-        : 'rgba(0,0,0,0.4)';
+      const color = typeof selectedObject.stroke === 'string' && selectedObject.stroke !== 'transparent' ? selectedObject.stroke : 'rgba(0,0,0,0.4)';
       const blur = selectedObject.strokeWidth > 0 && isInsideShadow ? selectedObject.strokeWidth : 40;
-
       selectedObject.set({
-        stroke: restoredStroke,
-        strokeWidth: restoredStrokeWidth,
-        shadow: new fabric.Shadow({
-          color: color,
-          blur: blur,
-          offsetX: 0,
-          offsetY: 10
-        }),
+        stroke: restoredStroke, strokeWidth: restoredStrokeWidth,
+        shadow: new fabric.Shadow({ color: color, blur: blur, offsetX: 0, offsetY: 10 }),
         clipPath: selectedObject.type === 'image' ? getObjectClipPath(selectedObject) : null
       });
     }
-    
     fabricCanvas.renderAll();
     onObjectChange?.();
   };
@@ -255,31 +238,16 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
   const updateArrowStyle = (style: 'start' | 'end' | 'both' | 'none') => {
     if (!fabricCanvas || !selectedObject || selectedObject.type !== 'path') return;
     const obj = selectedObject as fabric.Path;
-    
-    // Safety check: Is this one of our arrows?
     if ((obj as any).customType !== 'arrow') return;
-
     const path = obj.path;
-    // Assuming simple structure where first M is start and first L is end of the SHAFT
     if (!path || path.length < 2) return;
-    
-    // Note: path coordinates are relative to the bounding box/pathOffset
-    // We will extract them, reconstruct the path string, and create a new object.
     const start = path[0]; 
     const end = path[1];
-
     if (start[0] !== 'M' || end[0] !== 'L') return;
-
-    const x1 = start[1];
-    const y1 = start[2];
-    const x2 = end[1];
-    const y2 = end[2];
-
+    const x1 = start[1]; const y1 = start[2]; const x2 = end[1]; const y2 = end[2];
     const angle = Math.atan2(y2 - y1, x2 - x1);
     const headLength = 20;
-
     let newPathData = `M ${x1} ${y1} L ${x2} ${y2}`;
-
     if (style === 'end' || style === 'both') {
          const xLeft = x2 - headLength * Math.cos(angle - Math.PI / 6);
          const yLeft = y2 - headLength * Math.sin(angle - Math.PI / 6);
@@ -287,7 +255,6 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
          const yRight = y2 - headLength * Math.sin(angle + Math.PI / 6);
          newPathData += ` M ${x2} ${y2} L ${xLeft} ${yLeft} M ${x2} ${y2} L ${xRight} ${yRight}`;
     }
-
     if (style === 'start' || style === 'both') {
          const xLeft = x1 + headLength * Math.cos(angle - Math.PI / 6);
          const yLeft = y1 + headLength * Math.sin(angle - Math.PI / 6);
@@ -295,36 +262,16 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
          const yRight = y1 + headLength * Math.sin(angle + Math.PI / 6);
          newPathData += ` M ${x1} ${y1} L ${xLeft} ${yLeft} M ${x1} ${y1} L ${xRight} ${yRight}`;
     }
-
-    // Capture old center to preserve position
     const oldCenter = obj.getCenterPoint();
-
-    // Create new object
     const newPath = new fabric.Path(newPathData, {
-       left: obj.left,
-       top: obj.top,
-       stroke: obj.stroke,
-       strokeWidth: obj.strokeWidth,
-       fill: obj.fill,
-       strokeLineCap: obj.strokeLineCap,
-       strokeLineJoin: obj.strokeLineJoin,
-       strokeUniform: obj.strokeUniform,
-       scaleX: obj.scaleX,
-       scaleY: obj.scaleY,
-       rotation: obj.rotation,
-       opacity: obj.opacity,
-       shadow: obj.shadow,
-       // Maintain metadata
-       customType: 'arrow',
-       arrowStyle: style
+       left: obj.left, top: obj.top, stroke: obj.stroke, strokeWidth: obj.strokeWidth, fill: obj.fill,
+       strokeLineCap: obj.strokeLineCap, strokeLineJoin: obj.strokeLineJoin, strokeUniform: obj.strokeUniform,
+       scaleX: obj.scaleX, scaleY: obj.scaleY, rotation: obj.rotation, opacity: obj.opacity, shadow: obj.shadow,
+       customType: 'arrow', arrowStyle: style
     } as any);
-
-    // Reposition to match center
-    // Because adding arrowheads changes dimensions, we align by center to avoid big jumps.
     newPath.set({ originX: 'center', originY: 'center' });
     newPath.setPositionByOrigin(oldCenter, 'center', 'center');
-    newPath.set({ originX: 'left', originY: 'top' }); // Reset to default origin if needed
-
+    newPath.set({ originX: 'left', originY: 'top' });
     fabricCanvas.remove(obj);
     fabricCanvas.add(newPath);
     fabricCanvas.setActiveObject(newPath);
@@ -334,21 +281,14 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
 
   const handleSizeChange = (dim: 'width' | 'height', value: number) => {
     if (!selectedObject || !fabricCanvas) return;
-    
     if (dim === 'width') {
       const scaleX = value / selectedObject.width;
-      if (lockAspect) {
-        selectedObject.set({ scaleX, scaleY: scaleX });
-      } else {
-        selectedObject.set('scaleX', scaleX);
-      }
+      if (lockAspect) selectedObject.set({ scaleX, scaleY: scaleX });
+      else selectedObject.set('scaleX', scaleX);
     } else {
       const scaleY = value / selectedObject.height;
-      if (lockAspect) {
-        selectedObject.set({ scaleX: scaleY, scaleY: scaleY });
-      } else {
-        selectedObject.set('scaleY', scaleY);
-      }
+      if (lockAspect) selectedObject.set({ scaleX: scaleY, scaleY: scaleY });
+      else selectedObject.set('scaleY', scaleY);
     }
     fabricCanvas.renderAll();
     onObjectChange?.();
@@ -359,6 +299,42 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
     selectedObject.set(axis, value);
     fabricCanvas.renderAll();
     onObjectChange?.();
+  };
+
+  const handleLayerReorder = (dragIndex: number, hoverIndex: number) => {
+    if (!fabricCanvas) return;
+    // UI List is REVERSED (0 is Top). Fabric List is normal (0 is Bottom).
+    // Convert UI indices to Fabric indices
+    const total = layers.length;
+    const fabricDragIndex = total - 1 - dragIndex;
+    const fabricHoverIndex = total - 1 - hoverIndex;
+    
+    const obj = layers[fabricDragIndex];
+    if (!obj) return;
+    
+    // Move in fabric
+    fabricCanvas.moveObjectTo(obj, fabricHoverIndex);
+    fabricCanvas.renderAll();
+    onObjectChange?.();
+  };
+
+  const deleteLayer = (e: React.MouseEvent, obj: fabric.FabricObject) => {
+      e.stopPropagation();
+      if(fabricCanvas) {
+          fabricCanvas.remove(obj);
+          fabricCanvas.renderAll();
+          onObjectChange?.();
+      }
+  };
+
+  const toggleVisibility = (e: React.MouseEvent, obj: fabric.FabricObject) => {
+      e.stopPropagation();
+      obj.set('visible', !obj.visible);
+      if(!obj.visible) {
+          fabricCanvas?.discardActiveObject();
+      }
+      fabricCanvas?.renderAll();
+      onObjectChange?.();
   };
 
   const GRADIENTS = [
@@ -428,27 +404,44 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
   
   const currentTextBg = selectedObject?.backgroundColor;
   const hasTextBg = currentTextBg && currentTextBg !== 'transparent';
+  
+  // DRAG STATE for Layers
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+
+  // Layers list for display (Reversed so Top layer is first)
+  const displayLayers = [...layers].reverse();
 
   return (
     <aside className="w-80 bg-slate-900 border-l border-slate-800 flex flex-col z-40 overflow-y-auto custom-scrollbar">
       <div className="flex border-b border-slate-800 h-12 shrink-0">
         <button 
-          onClick={handleDeselect}
-          className={`flex-1 flex items-center justify-center gap-2 text-xs font-bold transition-colors ${!selectedObject ? 'text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/5' : 'text-slate-500 hover:text-slate-300'}`}
+          onClick={() => { handleDeselect(); setActiveTab('scene'); }}
+          className={`flex-1 flex items-center justify-center gap-2 text-[10px] font-bold transition-colors uppercase tracking-wide ${activeTab === 'scene' ? 'text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/5' : 'text-slate-500 hover:text-slate-300'}`}
         >
           <Settings2 size={14} />
-          SCENE
+          Scene
         </button>
-        <button className={`flex-1 flex items-center justify-center gap-2 text-xs font-bold transition-colors ${selectedObject ? 'text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/5' : 'text-slate-500 hover:text-slate-300 cursor-default'}`}>
+        <button 
+          onClick={() => setActiveTab('layers')}
+          className={`flex-1 flex items-center justify-center gap-2 text-[10px] font-bold transition-colors uppercase tracking-wide ${activeTab === 'layers' ? 'text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/5' : 'text-slate-500 hover:text-slate-300'}`}
+        >
           <Layers size={14} />
-          OBJECT
+          Layers
+        </button>
+        <button 
+          onClick={() => selectedObject && setActiveTab('properties')}
+          disabled={!selectedObject}
+          className={`flex-1 flex items-center justify-center gap-2 text-[10px] font-bold transition-colors uppercase tracking-wide ${activeTab === 'properties' ? 'text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/5' : (!selectedObject ? 'text-slate-700 cursor-not-allowed' : 'text-slate-500 hover:text-slate-300')}`}
+        >
+          <Layout size={14} />
+          Edit
         </button>
       </div>
 
       <div className="p-6 space-y-8 flex-1">
-        {!selectedObject && (
+        {activeTab === 'scene' && (
           <>
-            <section className="space-y-4">
+            <section className="space-y-4 animate-in fade-in duration-300">
               <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                 <Palette size={14} />
                 Frame Style
@@ -548,8 +541,98 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
           </>
         )}
 
-        {selectedObject && (
-          <section className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+        {activeTab === 'layers' && (
+           <div className="space-y-2 animate-in fade-in duration-300">
+             <div className="flex items-center justify-between pb-2 border-b border-slate-800 mb-4">
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                    Layer Order
+                </h3>
+                <span className="text-[10px] text-slate-600 font-mono">{layers.length} Objects</span>
+             </div>
+             <div className="space-y-2">
+                {displayLayers.map((obj, index) => {
+                    const isSelected = selectedObject === obj;
+                    
+                    let icon = <SquareIcon size={14} className="text-slate-500" />;
+                    let label = "Rectangle";
+                    
+                    if (obj.type === 'i-text') {
+                        icon = <Type size={14} className="text-slate-500" />;
+                        label = (obj as fabric.IText).text?.substring(0, 15) || "Text";
+                    } else if (obj.type === 'image') {
+                        icon = <ImageIcon size={14} className="text-slate-500" />;
+                        label = "Image Layer";
+                    } else if (obj.type === 'circle') {
+                        icon = <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-500" />;
+                        label = "Circle";
+                    } else if ((obj as any).customType === 'arrow') {
+                         icon = <ArrowRight size={14} className="text-slate-500" />;
+                         label = "Arrow";
+                    }
+
+                    return (
+                        <div 
+                            key={index}
+                            draggable
+                            onDragStart={() => setDraggingIndex(index)}
+                            onDragOver={(e) => { e.preventDefault(); }}
+                            onDrop={() => {
+                                if (draggingIndex !== null && draggingIndex !== index) {
+                                    handleLayerReorder(draggingIndex, index);
+                                }
+                                setDraggingIndex(null);
+                            }}
+                            onClick={() => {
+                                if (fabricCanvas) {
+                                    fabricCanvas.setActiveObject(obj);
+                                    fabricCanvas.renderAll();
+                                    onObjectChange?.();
+                                }
+                            }}
+                            className={`flex items-center gap-3 p-2 rounded-lg border cursor-pointer select-none transition-all group ${
+                                isSelected 
+                                ? 'bg-indigo-500/10 border-indigo-500/50 shadow-sm' 
+                                : 'bg-slate-800/40 border-slate-800 hover:bg-slate-800 hover:border-slate-700'
+                            }`}
+                        >
+                            <div className="cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400 p-1">
+                                <MoveVertical size={12} />
+                            </div>
+                            <div className="w-6 h-6 rounded bg-slate-900/50 flex items-center justify-center shrink-0">
+                                {icon}
+                            </div>
+                            <span className={`text-xs font-medium flex-1 truncate ${isSelected ? 'text-indigo-300' : 'text-slate-400'}`}>
+                                {label}
+                            </span>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button 
+                                    onClick={(e) => toggleVisibility(e, obj)}
+                                    className="p-1.5 hover:bg-slate-700 rounded text-slate-500 hover:text-slate-300"
+                                >
+                                    {obj.visible ? <Eye size={12} /> : <EyeOff size={12} />}
+                                </button>
+                                <button 
+                                    onClick={(e) => deleteLayer(e, obj)}
+                                    className="p-1.5 hover:bg-rose-900/30 rounded text-slate-500 hover:text-rose-400"
+                                >
+                                    <Trash2 size={12} />
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
+
+                {layers.length === 0 && (
+                    <div className="text-center py-8 text-slate-600 text-xs">
+                        No layers found.<br/>Add objects to see them here.
+                    </div>
+                )}
+             </div>
+           </div>
+        )}
+
+        {activeTab === 'properties' && selectedObject && (
+          <section className="space-y-6 animate-in fade-in duration-300">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <h3 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
                 <Maximize2 size={14} />
