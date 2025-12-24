@@ -28,7 +28,8 @@ import {
   ArrowRight,
   ArrowLeft,
   MoveHorizontal,
-  Minus
+  Minus,
+  Ban
 } from 'lucide-react';
 import { EditorState } from '../types';
 
@@ -394,29 +395,50 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                 <Palette size={14} />
                 Frame Style
               </h3>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
+                <button
+                    onClick={() => setState(s => ({ ...s, backgroundColor: 'transparent', backgroundGradient: '' }))}
+                    className={`h-10 rounded-md border border-slate-700 hover:scale-105 transition-transform flex items-center justify-center ${state.backgroundColor === 'transparent' ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900' : ''}`}
+                    title="Transparent Background"
+                    style={{ 
+                         backgroundImage: `linear-gradient(45deg, #334155 25%, transparent 25%), linear-gradient(-45deg, #334155 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #334155 75%), linear-gradient(-45deg, transparent 75%, #334155 75%)`,
+                         backgroundSize: '8px 8px',
+                         backgroundColor: '#0f172a'
+                    }}
+                >
+                    <Ban size={14} className="text-slate-400" />
+                </button>
                 <button
                     onClick={() => setState(s => ({ ...s, backgroundColor: '#ffffff', backgroundGradient: '' }))}
                     className="h-10 rounded-md border border-slate-700 bg-white hover:scale-105 transition-transform"
                     title="White Background"
                 />
-                {GRADIENTS.map((grad, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setState(s => ({ ...s, backgroundGradient: grad }))}
-                    className="h-10 rounded-md border border-slate-700 hover:scale-105 transition-transform"
-                    style={{ background: grad }}
-                  />
-                ))}
+                <button
+                    onClick={() => setState(s => ({ ...s, backgroundColor: '#000000', backgroundGradient: '' }))}
+                    className="h-10 rounded-md border border-slate-700 bg-black hover:scale-105 transition-transform"
+                    title="Black Background"
+                />
+                
                 <div className="h-10 rounded-md border border-slate-700 bg-slate-800 flex items-center justify-center relative overflow-hidden">
                   <input 
                     type="color" 
-                    value={state.backgroundColor}
+                    value={state.backgroundColor === 'transparent' ? '#ffffff' : state.backgroundColor}
                     onChange={(e) => setState(s => ({ ...s, backgroundColor: e.target.value, backgroundGradient: '' }))}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
                   />
                   <span className="text-[10px] text-slate-500 font-bold uppercase pointer-events-none">Color</span>
                 </div>
+              </div>
+              
+              <div className="grid grid-cols-6 gap-2 pt-2">
+                  {GRADIENTS.map((grad, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setState(s => ({ ...s, backgroundGradient: grad }))}
+                        className="h-8 rounded-md border border-slate-700 hover:scale-105 transition-transform"
+                        style={{ background: grad }}
+                      />
+                  ))}
               </div>
             </section>
 

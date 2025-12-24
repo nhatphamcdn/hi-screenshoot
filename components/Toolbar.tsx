@@ -9,7 +9,8 @@ import {
   Trash2,
   Share2,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Ghost
 } from 'lucide-react';
 
 interface ToolbarProps {
@@ -22,6 +23,8 @@ interface ToolbarProps {
   hasSelection: boolean;
   selectionType?: string;
   onGenerateImage?: () => void;
+  aiTransparentBg?: boolean;
+  onToggleAiTransparentBg?: () => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({ 
@@ -33,7 +36,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onDelete, 
   hasSelection,
   selectionType,
-  onGenerateImage
+  onGenerateImage,
+  aiTransparentBg,
+  onToggleAiTransparentBg
 }) => {
   const isImageSelected = hasSelection && selectionType === 'image';
 
@@ -60,17 +65,27 @@ const Toolbar: React.FC<ToolbarProps> = ({
             <span>Upload</span>
           </button>
            {onGenerateImage && (
-            <button 
-              onClick={onGenerateImage}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm font-medium border ${isImageSelected ? 'bg-indigo-600/10 border-indigo-500/50 text-indigo-300 hover:bg-indigo-600/20' : 'hover:bg-indigo-900/30 text-indigo-300 border-indigo-500/20'}`}
-            >
-              <Sparkles size={16} className={isImageSelected ? 'fill-indigo-500/20' : ''} />
-              <span>{isImageSelected ? 'AI Edit' : 'AI Gen'}</span>
-            </button>
+            <div className="flex items-center gap-1 bg-slate-800/50 rounded-md p-1 border border-slate-700/50 ml-2">
+                <button 
+                  onClick={onGenerateImage}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded transition-colors text-sm font-medium ${isImageSelected ? 'bg-indigo-600/10 text-indigo-300 hover:bg-indigo-600/20' : 'hover:bg-slate-700 text-indigo-300'}`}
+                >
+                  <Sparkles size={16} className={isImageSelected ? 'fill-indigo-500/20' : ''} />
+                  <span>{isImageSelected ? 'AI Edit' : 'AI Gen'}</span>
+                </button>
+                <div className="w-px h-4 bg-slate-700 mx-1"></div>
+                <button 
+                  onClick={onToggleAiTransparentBg}
+                  title={aiTransparentBg ? "Transparent Background: ON" : "Transparent Background: OFF"}
+                  className={`p-1.5 rounded transition-colors ${aiTransparentBg ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700'}`}
+                >
+                  <Ghost size={16} />
+                </button>
+            </div>
           )}
           <button 
             onClick={onAddText}
-            className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-slate-800 text-slate-300 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-slate-800 text-slate-300 transition-colors text-sm font-medium ml-2"
           >
             <Type size={18} />
             <span>Text</span>

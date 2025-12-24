@@ -32,6 +32,7 @@ const App: React.FC = () => {
   const [zoomScale, setZoomScale] = useState(1);
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [aiTransparentBg, setAiTransparentBg] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeToolRef = useRef<DrawingTool>('none');
@@ -387,8 +388,14 @@ const App: React.FC = () => {
     // Give React a moment to render the loader before potential heavy work
     await new Promise(resolve => setTimeout(resolve, 50));
 
+    // STRICT instruction to avoid checkerboards
+    // We demand a flat color so we can key it out.
+    const backgroundInstruction = aiTransparentBg 
+      ? "Replace the background with a uniform, solid MAGENTA color (Hex #FF00FF). Ensure the background is one single flat color with no gradients, no shadows, and no patterns. Do not generate a checkerboard."
+      : "Replace the background with pure white (#FFFFFF). No shadows added to the background.";
+
     // Refined prompt to preserve object identity while strictly removing background/border and ensuring high quality
-    const promptText = "Edit the provided reference image. Keep the terracotta pots exactly the same in shape, color, texture, and position. Remove the rounded border/frame completely. Replace the background with pure white (#FFFFFF). No shadows added to the background. Ultra-high-resolution 8K output, sharp focus, photorealistic. No changes to product design, no additional objects.";
+    const promptText = `Edit the provided reference image. Keep the main foreground object exactly the same in shape, color, texture, and position. Remove the rounded border/frame completely. ${backgroundInstruction} Ultra-high-resolution 8K output, sharp focus, photorealistic. No changes to product design, no additional objects.`;
 
     // Logic to find an image even if not currently selected
     let targetImage = selectedObject;
@@ -427,14 +434,12 @@ const App: React.FC = () => {
 
        parts.push({ text: promptText });
 
-       // Switch back to gemini-2.5-flash-image per user request
        const response = await ai.models.generateContent({
            model: 'gemini-2.5-flash-image',
            contents: {
                parts: parts
            },
            config: {
-               // Removed imageSize: '4K' as it is not supported by Flash Image
                imageConfig: {
                    aspectRatio: '1:1'
                }
@@ -451,18 +456,80 @@ const App: React.FC = () => {
                 
                 const imgObj = new Image();
                 imgObj.onload = () => {
-                   // Add generated image to canvas
-                   addImageObjectToCanvas(imgObj, !hasImage);
-                   
-                   // Remove the original source image from the canvas if it exists
-                   if (targetImage && fabricCanvasRef.current) {
-                      fabricCanvasRef.current.remove(targetImage);
-                      // If the removed image was selected, clear the selection state
-                      if (selectedObject === targetImage) {
-                         setSelectedObject(null);
-                         fabricCanvasRef.current.discardActiveObject();
+                   const cleanupOldImage = () => {
+                      if (targetImage && fabricCanvasRef.current) {
+                          fabricCanvasRef.current.remove(targetImage);
+                          if (selectedObject === targetImage) {
+                            setSelectedObject(null);
+                            fabricCanvasRef.current.discardActiveObject();
+                          }
+                          fabricCanvasRef.current.requestRenderAll();
                       }
-                      fabricCanvasRef.current.requestRenderAll();
+                   };
+
+                   if (aiTransparentBg) {
+                       // Client-side Chroma Key Removal
+                       const tempCanvas = document.createElement('canvas');
+                       tempCanvas.width = imgObj.width;
+                       tempCanvas.height = imgObj.height;
+                       const ctx = tempCanvas.getContext('2d', { willReadFrequently: true });
+                       
+                       if (ctx) {
+                           ctx.drawImage(imgObj, 0, 0);
+                           const imageData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                           const data = imageData.data;
+                           
+                           // Auto-detect the background color from the top-left pixel.
+                           // This creates a dynamic key based on what the AI actually generated.
+                           const keyR = data[0];
+                           const keyG = data[1];
+                           const keyB = data[2];
+
+                           // Define thresholds for hard removal and soft blending
+                           // Adjusted to prevent eating into the subject but removing artifacts
+                           const hardThreshold = 35; // Pixels closer than this are fully removed
+                           const softThreshold = 75; // Pixels between hard and soft are blended
+                           
+                           for (let i = 0; i < data.length; i += 4) {
+                               const r = data[i];
+                               const g = data[i + 1];
+                               const b = data[i + 2];
+                               
+                               // Calculate Euclidean distance from the key color
+                               const distance = Math.sqrt(
+                                   Math.pow(r - keyR, 2) + 
+                                   Math.pow(g - keyG, 2) + 
+                                   Math.pow(b - keyB, 2)
+                               );
+
+                               if (distance < hardThreshold) {
+                                   data[i + 3] = 0; // Fully transparent
+                               } else if (distance < softThreshold) {
+                                   // Linear ramp for simple anti-aliasing
+                                   // distance = hard -> alpha = 0
+                                   // distance = soft -> alpha = 255
+                                   const alpha = ((distance - hardThreshold) / (softThreshold - hardThreshold)) * 255;
+                                   data[i + 3] = alpha;
+                               }
+                           }
+                           
+                           ctx.putImageData(imageData, 0, 0);
+                           
+                           const processedImg = new Image();
+                           processedImg.onload = () => {
+                               addImageObjectToCanvas(processedImg, !hasImage);
+                               cleanupOldImage();
+                           };
+                           processedImg.src = tempCanvas.toDataURL();
+                       } else {
+                           // Fallback if canvas context fails
+                           addImageObjectToCanvas(imgObj, !hasImage);
+                           cleanupOldImage();
+                       }
+                   } else {
+                       // Standard flow
+                       addImageObjectToCanvas(imgObj, !hasImage);
+                       cleanupOldImage();
                    }
                 };
                 imgObj.src = imgSrc;
@@ -534,42 +601,45 @@ const App: React.FC = () => {
     ctx.scale(multiplier, multiplier);
     
     // 6. Draw Background (Rounded Rect)
-    const drawRoundedRect = (x: number, y: number, w: number, h: number, r: number) => {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-    };
+    // Only draw background if it is NOT transparent
+    if (editorState.backgroundColor !== 'transparent') {
+        const drawRoundedRect = (x: number, y: number, w: number, h: number, r: number) => {
+          ctx.beginPath();
+          ctx.moveTo(x + r, y);
+          ctx.lineTo(x + w - r, y);
+          ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+          ctx.lineTo(x + w, y + h - r);
+          ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+          ctx.lineTo(x + r, y + h);
+          ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+          ctx.lineTo(x, y + r);
+          ctx.quadraticCurveTo(x, y, x + r, y);
+          ctx.closePath();
+        };
 
-    drawRoundedRect(0, 0, totalWidth, totalHeight, radius);
-    ctx.clip(); // Ensure sharp clipping at borders
+        drawRoundedRect(0, 0, totalWidth, totalHeight, radius);
+        ctx.clip(); // Ensure sharp clipping at borders
 
-    // Fill Background
-    if (editorState.backgroundGradient) {
-      // Parse basic linear gradient from the CSS strings used
-      // Format: "linear-gradient(135deg, #color1 0%, #color2 100%)"
-      const gradMatch = editorState.backgroundGradient.match(/linear-gradient\((\d+)deg,\s*(#[a-fA-F0-9]+)\s*0%,\s*(#[a-fA-F0-9]+)\s*100%\)/i);
-      if (gradMatch) {
-         // Canvas gradients are defined by start/end points. 
-         // 135deg is top-left to bottom-right.
-         const gradient = ctx.createLinearGradient(0, 0, totalWidth, totalHeight);
-         gradient.addColorStop(0, gradMatch[2]);
-         gradient.addColorStop(1, gradMatch[3]);
-         ctx.fillStyle = gradient;
-      } else {
-         ctx.fillStyle = editorState.backgroundColor;
-      }
+        // Fill Background
+        if (editorState.backgroundGradient) {
+          const gradMatch = editorState.backgroundGradient.match(/linear-gradient\((\d+)deg,\s*(#[a-fA-F0-9]+)\s*0%,\s*(#[a-fA-F0-9]+)\s*100%\)/i);
+          if (gradMatch) {
+             const gradient = ctx.createLinearGradient(0, 0, totalWidth, totalHeight);
+             gradient.addColorStop(0, gradMatch[2]);
+             gradient.addColorStop(1, gradMatch[3]);
+             ctx.fillStyle = gradient;
+          } else {
+             ctx.fillStyle = editorState.backgroundColor;
+          }
+        } else {
+          ctx.fillStyle = editorState.backgroundColor;
+        }
+        ctx.fill();
     } else {
-      ctx.fillStyle = editorState.backgroundColor;
+        // For transparent export, we just need to ensure the final image is clipped if needed, 
+        // although clipping a transparent background has no visual effect unless content overflows.
+        // We skip filling the background rect.
     }
-    ctx.fill();
 
     // 7. Draw Content
     // contentCanvas is scaled by multiplier, but since ctx is also scaled, 
@@ -612,6 +682,36 @@ const App: React.FC = () => {
     forceRefresh();
   };
 
+  // Helper to determine the container style
+  const getContainerStyle = () => {
+     const baseStyle = {
+        padding: `${editorState.padding}px`,
+        borderRadius: `${editorState.borderRadius}px`,
+        boxShadow: '0 30px 60px -12px rgba(0,0,0,0.6)',
+        transform: `scale(${zoomScale})`,
+        transformOrigin: 'center center'
+     };
+
+     if (editorState.backgroundColor === 'transparent') {
+         return {
+             ...baseStyle,
+             backgroundImage: `
+                linear-gradient(45deg, #ccc 25%, transparent 25%), 
+                linear-gradient(-45deg, #ccc 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #ccc 75%), 
+                linear-gradient(-45deg, transparent 75%, #ccc 75%)`,
+             backgroundSize: '20px 20px',
+             backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
+             backgroundColor: 'white'
+         };
+     }
+
+     return {
+         ...baseStyle,
+         background: editorState.backgroundGradient || editorState.backgroundColor
+     };
+  };
+
   return (
     <div className="flex flex-col h-screen bg-slate-950 text-slate-200 overflow-hidden">
       {isGenerating && (
@@ -624,6 +724,7 @@ const App: React.FC = () => {
                <div className="text-center space-y-2">
                  <h3 className="text-xl font-bold text-white">Generating Image</h3>
                  <p className="text-slate-400 text-sm">Processing with AI...</p>
+                 <p className="text-xs text-slate-500 mt-2">Generating Magenta Mask & Removing Background...</p>
                </div>
            </div>
         </div>
@@ -639,6 +740,8 @@ const App: React.FC = () => {
         hasSelection={!!selectedObject}
         selectionType={selectedObject?.type}
         onGenerateImage={handleGenerateImage}
+        aiTransparentBg={aiTransparentBg}
+        onToggleAiTransparentBg={() => setAiTransparentBg(prev => !prev)}
       />
       
       <input 
@@ -658,14 +761,7 @@ const App: React.FC = () => {
           <div 
             id="canvas-wrapper" 
             className={`transition-all duration-300 ease-out relative ${!hasImage ? 'hidden' : 'block'}`}
-            style={{ 
-              background: editorState.backgroundGradient || editorState.backgroundColor,
-              padding: `${editorState.padding}px`,
-              borderRadius: `${editorState.borderRadius}px`,
-              boxShadow: '0 30px 60px -12px rgba(0,0,0,0.6)',
-              transform: `scale(${zoomScale})`,
-              transformOrigin: 'center center'
-            }}
+            style={getContainerStyle()}
           >
             {/* The actual Fabric canvas */}
             <canvas ref={canvasRef} />
