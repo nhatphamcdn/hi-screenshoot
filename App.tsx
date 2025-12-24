@@ -6,7 +6,7 @@ import {
   Image as ImageIcon, 
   Type, 
   Square, 
-  Circle as CircleIcon,
+  Circle as CircleIcon, 
   Trash2,
   Upload,
   ArrowRight,
@@ -921,7 +921,7 @@ const App: React.FC = () => {
                 <Upload size={36} className="text-zinc-400 group-hover:text-primary-400" />
               </div>
               <div className="text-center px-6">
-                <p className="text-xl font-bold text-zinc-200">Snap a Screenshot Here</p>
+                <p className="text-xl font-bold text-zinc-200">Click to Upload Image</p>
                 <p className="text-sm text-zinc-500 mt-2">Upload images or <span className="text-primary-400 font-bold hover:underline" onClick={(e) => { e.stopPropagation(); handleGenerateImage(); }}>generate with AI</span></p>
               </div>
             </div>
