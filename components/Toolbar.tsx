@@ -46,52 +46,52 @@ const Toolbar: React.FC<ToolbarProps> = ({
   const isImageSelected = hasSelection && selectionType === 'image';
 
   return (
-    <header className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-6 z-50">
+    <header className="h-16 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-6 z-50">
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+          <span className="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
             Image Editor
           </span>
         </div>
 
-        <div className="h-8 w-px bg-slate-800 mx-2" />
+        <div className="h-8 w-px bg-zinc-800 mx-2" />
 
         <div className="flex items-center gap-1">
           {onReset && (
             <>
               <button 
                 onClick={onReset}
-                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-slate-800 text-slate-300 transition-colors text-sm font-medium"
+                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-zinc-800 text-zinc-300 transition-colors text-sm font-medium"
                 title="Reset to Start"
               >
                 <RotateCcw size={18} />
                 <span>Reset</span>
               </button>
-              <div className="w-px h-4 bg-slate-800 mx-2" />
+              <div className="w-px h-4 bg-zinc-800 mx-2" />
             </>
           )}
           
           <button 
             onClick={onUpload}
-            className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-slate-800 text-slate-300 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-zinc-800 text-zinc-300 transition-colors text-sm font-medium"
           >
             <Plus size={18} />
             <span>Upload</span>
           </button>
            {onGenerateImage && (
-            <div className="flex items-center gap-1 bg-slate-800/50 rounded-md p-1 border border-slate-700/50 ml-2">
+            <div className="flex items-center gap-1 bg-zinc-800/50 rounded-md p-1 border border-zinc-700/50 ml-2">
                 <button 
                   onClick={onGenerateImage}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded transition-colors text-sm font-medium ${isImageSelected ? 'bg-primary-600/10 text-primary-300 hover:bg-primary-600/20' : 'hover:bg-slate-700 text-primary-300'}`}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded transition-colors text-sm font-medium ${isImageSelected ? 'bg-primary-600/10 text-primary-300 hover:bg-primary-600/20' : 'hover:bg-zinc-700 text-primary-300'}`}
                 >
                   <Sparkles size={16} className={isImageSelected ? 'fill-primary-500/20' : ''} />
                   <span>{hasImage ? 'Remove bg' : 'AI Gen'}</span>
                 </button>
-                <div className="w-px h-4 bg-slate-700 mx-1"></div>
+                <div className="w-px h-4 bg-zinc-700 mx-1"></div>
                 <button 
                   onClick={onToggleAiTransparentBg}
                   title={aiTransparentBg ? "Transparent Background: ON" : "Transparent Background: OFF"}
-                  className={`p-1.5 rounded transition-colors ${aiTransparentBg ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700'}`}
+                  className={`p-1.5 rounded transition-colors ${aiTransparentBg ? 'bg-primary-600 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700'}`}
                 >
                   <Ghost size={16} />
                 </button>
@@ -99,28 +99,28 @@ const Toolbar: React.FC<ToolbarProps> = ({
           )}
           <button 
             onClick={onAddText}
-            className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-slate-800 text-slate-300 transition-colors text-sm font-medium ml-2"
+            className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-zinc-800 text-zinc-300 transition-colors text-sm font-medium ml-2"
           >
             <Type size={18} />
             <span>Text</span>
           </button>
           <button 
             onClick={() => onSetTool('rect')}
-            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm font-medium ${activeTool === 'rect' ? 'bg-primary-600/20 text-primary-400' : 'hover:bg-slate-800 text-slate-300'}`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm font-medium ${activeTool === 'rect' ? 'bg-primary-600/20 text-primary-400' : 'hover:bg-zinc-800 text-zinc-300'}`}
           >
             <Square size={18} />
             <span>Rect</span>
           </button>
           <button 
             onClick={() => onSetTool('circle')}
-            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm font-medium ${activeTool === 'circle' ? 'bg-primary-600/20 text-primary-400' : 'hover:bg-slate-800 text-slate-300'}`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm font-medium ${activeTool === 'circle' ? 'bg-primary-600/20 text-primary-400' : 'hover:bg-zinc-800 text-zinc-300'}`}
           >
             <CircleIcon size={18} />
             <span>Circle</span>
           </button>
           <button 
             onClick={() => onSetTool('arrow')}
-            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm font-medium ${activeTool === 'arrow' ? 'bg-primary-600/20 text-primary-400' : 'hover:bg-slate-800 text-slate-300'}`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm font-medium ${activeTool === 'arrow' ? 'bg-primary-600/20 text-primary-400' : 'hover:bg-zinc-800 text-zinc-300'}`}
           >
             <ArrowRight size={18} />
             <span>Arrow</span>

@@ -77,7 +77,7 @@ const DebouncedNumberInput = ({
 
     return (
         <div className="space-y-1.5">
-            <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">{label}</label>
+            <label className="text-[10px] text-zinc-500 font-bold uppercase ml-1">{label}</label>
             <input 
                 type="number"
                 value={localValue}
@@ -412,18 +412,18 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
   const displayLayers = [...layers].reverse();
 
   return (
-    <aside className="w-80 bg-slate-900 border-l border-slate-800 flex flex-col z-40 overflow-y-auto custom-scrollbar">
-      <div className="flex border-b border-slate-800 h-12 shrink-0">
+    <aside className="w-80 bg-zinc-900 border-l border-zinc-800 flex flex-col z-40 overflow-y-auto custom-scrollbar">
+      <div className="flex border-b border-zinc-800 h-12 shrink-0">
         <button 
           onClick={() => { handleDeselect(); setActiveTab('scene'); }}
-          className={`flex-1 flex items-center justify-center gap-2 text-[10px] font-bold transition-colors uppercase tracking-wide ${activeTab === 'scene' ? 'text-primary-400 border-b-2 border-primary-500 bg-primary-500/5' : 'text-slate-500 hover:text-slate-300'}`}
+          className={`flex-1 flex items-center justify-center gap-2 text-[10px] font-bold transition-colors uppercase tracking-wide ${activeTab === 'scene' ? 'text-primary-400 border-b-2 border-primary-500 bg-primary-500/5' : 'text-zinc-500 hover:text-zinc-300'}`}
         >
           <Settings2 size={14} />
           Scene
         </button>
         <button 
           onClick={() => setActiveTab('layers')}
-          className={`flex-1 flex items-center justify-center gap-2 text-[10px] font-bold transition-colors uppercase tracking-wide ${activeTab === 'layers' ? 'text-primary-400 border-b-2 border-primary-500 bg-primary-500/5' : 'text-slate-500 hover:text-slate-300'}`}
+          className={`flex-1 flex items-center justify-center gap-2 text-[10px] font-bold transition-colors uppercase tracking-wide ${activeTab === 'layers' ? 'text-primary-400 border-b-2 border-primary-500 bg-primary-500/5' : 'text-zinc-500 hover:text-zinc-300'}`}
         >
           <Layers size={14} />
           Layers
@@ -431,7 +431,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
         <button 
           onClick={() => selectedObject && setActiveTab('properties')}
           disabled={!selectedObject}
-          className={`flex-1 flex items-center justify-center gap-2 text-[10px] font-bold transition-colors uppercase tracking-wide ${activeTab === 'properties' ? 'text-primary-400 border-b-2 border-primary-500 bg-primary-500/5' : (!selectedObject ? 'text-slate-700 cursor-not-allowed' : 'text-slate-500 hover:text-slate-300')}`}
+          className={`flex-1 flex items-center justify-center gap-2 text-[10px] font-bold transition-colors uppercase tracking-wide ${activeTab === 'properties' ? 'text-primary-400 border-b-2 border-primary-500 bg-primary-500/5' : (!selectedObject ? 'text-zinc-700 cursor-not-allowed' : 'text-zinc-500 hover:text-zinc-300')}`}
         >
           <Layout size={14} />
           Edit
@@ -442,42 +442,42 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
         {activeTab === 'scene' && (
           <>
             <section className="space-y-4 animate-in fade-in duration-300">
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+              <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
                 <Palette size={14} />
                 Frame Style
               </h3>
               <div className="grid grid-cols-4 gap-2">
                 <button
                     onClick={() => setState(s => ({ ...s, backgroundColor: 'transparent', backgroundGradient: '' }))}
-                    className={`h-10 rounded-md border border-slate-700 hover:scale-105 transition-transform flex items-center justify-center ${state.backgroundColor === 'transparent' ? 'ring-2 ring-primary-500 ring-offset-2 ring-offset-slate-900' : ''}`}
+                    className={`h-10 rounded-md border border-zinc-700 hover:scale-105 transition-transform flex items-center justify-center ${state.backgroundColor === 'transparent' ? 'ring-2 ring-primary-500 ring-offset-2 ring-offset-zinc-900' : ''}`}
                     title="Transparent Background"
                     style={{ 
-                         backgroundImage: `linear-gradient(45deg, #334155 25%, transparent 25%), linear-gradient(-45deg, #334155 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #334155 75%), linear-gradient(-45deg, transparent 75%, #334155 75%)`,
+                         backgroundImage: `linear-gradient(45deg, #3f3f46 25%, transparent 25%), linear-gradient(-45deg, #3f3f46 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #3f3f46 75%), linear-gradient(-45deg, transparent 75%, #3f3f46 75%)`,
                          backgroundSize: '8px 8px',
-                         backgroundColor: '#0f172a'
+                         backgroundColor: '#09090b'
                     }}
                 >
-                    <Ban size={14} className="text-slate-400" />
+                    <Ban size={14} className="text-zinc-400" />
                 </button>
                 <button
                     onClick={() => setState(s => ({ ...s, backgroundColor: '#ffffff', backgroundGradient: '' }))}
-                    className="h-10 rounded-md border border-slate-700 bg-white hover:scale-105 transition-transform"
+                    className="h-10 rounded-md border border-zinc-700 bg-white hover:scale-105 transition-transform"
                     title="White Background"
                 />
                 <button
                     onClick={() => setState(s => ({ ...s, backgroundColor: '#000000', backgroundGradient: '' }))}
-                    className="h-10 rounded-md border border-slate-700 bg-black hover:scale-105 transition-transform"
+                    className="h-10 rounded-md border border-zinc-700 bg-black hover:scale-105 transition-transform"
                     title="Black Background"
                 />
                 
-                <div className="h-10 rounded-md border border-slate-700 bg-slate-800 flex items-center justify-center relative overflow-hidden">
+                <div className="h-10 rounded-md border border-zinc-700 bg-zinc-800 flex items-center justify-center relative overflow-hidden">
                   <input 
                     type="color" 
                     value={state.backgroundColor === 'transparent' ? '#ffffff' : state.backgroundColor}
                     onChange={(e) => setState(s => ({ ...s, backgroundColor: e.target.value, backgroundGradient: '' }))}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
                   />
-                  <span className="text-[10px] text-slate-500 font-bold uppercase pointer-events-none">Color</span>
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase pointer-events-none">Color</span>
                 </div>
               </div>
               
@@ -486,7 +486,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                       <button
                         key={i}
                         onClick={() => setState(s => ({ ...s, backgroundGradient: grad }))}
-                        className="h-8 rounded-md border border-slate-700 hover:scale-105 transition-transform"
+                        className="h-8 rounded-md border border-zinc-700 hover:scale-105 transition-transform"
                         style={{ background: grad }}
                       />
                   ))}
@@ -494,7 +494,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
             </section>
 
             <section className="space-y-6">
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+              <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
                 <Layout size={14} />
                 Scene Layout
               </h3>
@@ -504,36 +504,36 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                       label="Canvas W"
                       value={canvasWidth}
                       onChange={(val) => setState(s => ({ ...s, customWidth: val }))}
-                      className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-slate-300 focus:border-primary-500 transition-colors"
+                      className="w-full h-9 bg-zinc-800 border border-zinc-700 rounded-md px-3 text-[11px] font-mono text-zinc-300 focus:border-primary-500 transition-colors"
                    />
                    <DebouncedNumberInput
                       label="Canvas H"
                       value={canvasHeight}
                       onChange={(val) => setState(s => ({ ...s, customHeight: val }))}
-                      className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-slate-300 focus:border-primary-500 transition-colors"
+                      className="w-full h-9 bg-zinc-800 border border-zinc-700 rounded-md px-3 text-[11px] font-mono text-zinc-300 focus:border-primary-500 transition-colors"
                    />
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex justify-between text-xs text-slate-400">
+                  <div className="flex justify-between text-xs text-zinc-400">
                     <span>Padding</span>
                     <span className="font-mono">{state.padding}px</span>
                   </div>
                   <input 
                     type="range" min="0" max="250" value={state.padding}
                     onChange={(e) => setState(s => ({ ...s, padding: parseInt(e.target.value) }))}
-                    className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                    className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
                   />
                 </div>
                 <div className="space-y-2">
-                  <div className="flex justify-between text-xs text-slate-400">
+                  <div className="flex justify-between text-xs text-zinc-400">
                     <span>Frame Radius</span>
                     <span className="font-mono">{state.borderRadius}px</span>
                   </div>
                   <input 
                     type="range" min="0" max="100" value={state.borderRadius}
                     onChange={(e) => setState(s => ({ ...s, borderRadius: parseInt(e.target.value) }))}
-                    className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                    className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
                   />
                 </div>
               </div>
@@ -543,30 +543,30 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
 
         {activeTab === 'layers' && (
            <div className="space-y-2 animate-in fade-in duration-300">
-             <div className="flex items-center justify-between pb-2 border-b border-slate-800 mb-4">
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+             <div className="flex items-center justify-between pb-2 border-b border-zinc-800 mb-4">
+                <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
                     Layer Order
                 </h3>
-                <span className="text-[10px] text-slate-600 font-mono">{layers.length} Objects</span>
+                <span className="text-[10px] text-zinc-600 font-mono">{layers.length} Objects</span>
              </div>
              <div className="space-y-2">
                 {displayLayers.map((obj, index) => {
                     const isSelected = selectedObject === obj;
                     
-                    let icon = <SquareIcon size={14} className="text-slate-500" />;
+                    let icon = <SquareIcon size={14} className="text-zinc-500" />;
                     let label = "Rectangle";
                     
                     if (obj.type === 'i-text') {
-                        icon = <Type size={14} className="text-slate-500" />;
+                        icon = <Type size={14} className="text-zinc-500" />;
                         label = (obj as fabric.IText).text?.substring(0, 15) || "Text";
                     } else if (obj.type === 'image') {
-                        icon = <ImageIcon size={14} className="text-slate-500" />;
+                        icon = <ImageIcon size={14} className="text-zinc-500" />;
                         label = "Image Layer";
                     } else if (obj.type === 'circle') {
-                        icon = <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-500" />;
+                        icon = <div className="w-3.5 h-3.5 rounded-full border-2 border-zinc-500" />;
                         label = "Circle";
                     } else if ((obj as any).customType === 'arrow') {
-                         icon = <ArrowRight size={14} className="text-slate-500" />;
+                         icon = <ArrowRight size={14} className="text-zinc-500" />;
                          label = "Arrow";
                     }
 
@@ -592,28 +592,28 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                             className={`flex items-center gap-3 p-2 rounded-lg border cursor-pointer select-none transition-all group ${
                                 isSelected 
                                 ? 'bg-primary-500/10 border-primary-500/50 shadow-sm' 
-                                : 'bg-slate-800/40 border-slate-800 hover:bg-slate-800 hover:border-slate-700'
+                                : 'bg-zinc-800/40 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700'
                             }`}
                         >
-                            <div className="cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400 p-1">
+                            <div className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400 p-1">
                                 <MoveVertical size={12} />
                             </div>
-                            <div className="w-6 h-6 rounded bg-slate-900/50 flex items-center justify-center shrink-0">
+                            <div className="w-6 h-6 rounded bg-zinc-900/50 flex items-center justify-center shrink-0">
                                 {icon}
                             </div>
-                            <span className={`text-xs font-medium flex-1 truncate ${isSelected ? 'text-primary-300' : 'text-slate-400'}`}>
+                            <span className={`text-xs font-medium flex-1 truncate ${isSelected ? 'text-primary-300' : 'text-zinc-400'}`}>
                                 {label}
                             </span>
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button 
                                     onClick={(e) => toggleVisibility(e, obj)}
-                                    className="p-1.5 hover:bg-slate-700 rounded text-slate-500 hover:text-slate-300"
+                                    className="p-1.5 hover:bg-zinc-700 rounded text-zinc-500 hover:text-zinc-300"
                                 >
                                     {obj.visible ? <Eye size={12} /> : <EyeOff size={12} />}
                                 </button>
                                 <button 
                                     onClick={(e) => deleteLayer(e, obj)}
-                                    className="p-1.5 hover:bg-rose-900/30 rounded text-slate-500 hover:text-rose-400"
+                                    className="p-1.5 hover:bg-rose-900/30 rounded text-zinc-500 hover:text-rose-400"
                                 >
                                     <Trash2 size={12} />
                                 </button>
@@ -623,7 +623,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                 })}
 
                 {layers.length === 0 && (
-                    <div className="text-center py-8 text-slate-600 text-xs">
+                    <div className="text-center py-8 text-zinc-600 text-xs">
                         No layers found.<br/>Add objects to see them here.
                     </div>
                 )}
@@ -633,8 +633,8 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
 
         {activeTab === 'properties' && selectedObject && (
           <section className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+              <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-widest flex items-center gap-2">
                 <Maximize2 size={14} />
                 {selectedObject.type === 'path' ? 'ARROW/LINE' : selectedObject.type?.toUpperCase()} Props
               </h3>
@@ -642,13 +642,13 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
 
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
                   <Move size={12} />
                   Geometry & Transform
                 </h4>
                 <button 
                   onClick={() => setLockAspect(!lockAspect)}
-                  className={`p-1 rounded transition-colors ${lockAspect ? 'text-primary-400' : 'text-slate-600 hover:text-slate-400'}`}
+                  className={`p-1 rounded transition-colors ${lockAspect ? 'text-primary-400' : 'text-zinc-600 hover:text-zinc-400'}`}
                   title={lockAspect ? "Unlock Aspect Ratio" : "Lock Aspect Ratio"}
                 >
                   {lockAspect ? <Lock size={14} /> : <Unlock size={14} />}
@@ -656,53 +656,53 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Width (px)</label>
+                  <label className="text-[10px] text-zinc-500 font-bold uppercase ml-1">Width (px)</label>
                   <input 
                     type="number"
                     value={objWidth}
                     onChange={(e) => handleSizeChange('width', parseInt(e.target.value) || 1)}
-                    className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-primary-400 focus:outline-none focus:border-primary-500 transition-colors"
+                    className="w-full h-9 bg-zinc-800 border border-zinc-700 rounded-md px-3 text-[11px] font-mono text-primary-400 focus:outline-none focus:border-primary-500 transition-colors"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Height (px)</label>
+                  <label className="text-[10px] text-zinc-500 font-bold uppercase ml-1">Height (px)</label>
                   <input 
                     type="number"
                     value={objHeight}
                     onChange={(e) => handleSizeChange('height', parseInt(e.target.value) || 1)}
-                    className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-primary-400 focus:outline-none focus:border-primary-500 transition-colors"
+                    className="w-full h-9 bg-zinc-800 border border-zinc-700 rounded-md px-3 text-[11px] font-mono text-primary-400 focus:outline-none focus:border-primary-500 transition-colors"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Position X</label>
+                  <label className="text-[10px] text-zinc-500 font-bold uppercase ml-1">Position X</label>
                   <input 
                     type="number"
                     value={objLeft}
                     onChange={(e) => handlePositionChange('left', parseInt(e.target.value) || 0)}
-                    className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-slate-300 focus:outline-none focus:border-primary-500 transition-colors"
+                    className="w-full h-9 bg-zinc-800 border border-zinc-700 rounded-md px-3 text-[11px] font-mono text-zinc-300 focus:outline-none focus:border-primary-500 transition-colors"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Position Y</label>
+                  <label className="text-[10px] text-zinc-500 font-bold uppercase ml-1">Position Y</label>
                   <input 
                     type="number"
                     value={objTop}
                     onChange={(e) => handlePositionChange('top', parseInt(e.target.value) || 0)}
-                    className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-slate-300 focus:outline-none focus:border-primary-500 transition-colors"
+                    className="w-full h-9 bg-zinc-800 border border-zinc-700 rounded-md px-3 text-[11px] font-mono text-zinc-300 focus:outline-none focus:border-primary-500 transition-colors"
                   />
                 </div>
               </div>
             </div>
             
             {isArrow && (
-              <div className="space-y-4 border-t border-slate-800 pt-4">
-                 <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+              <div className="space-y-4 border-t border-zinc-800 pt-4">
+                 <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
                    <ArrowRight size={12} />
                    Arrow Style
                  </h4>
-                 <div className="flex bg-slate-800 rounded-md border border-slate-700 h-9 p-1">
+                 <div className="flex bg-zinc-800 rounded-md border border-zinc-700 h-9 p-1">
                       {[
                         { id: 'none', icon: Minus, label: 'Line' },
                         { id: 'start', icon: ArrowLeft, label: 'Start' },
@@ -715,7 +715,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                               className={`flex-1 rounded flex items-center justify-center transition-all ${
                                   (selectedObject as any).arrowStyle === style.id 
                                   ? 'bg-primary-600 text-white shadow-sm' 
-                                  : 'text-slate-400 hover:text-slate-200'
+                                  : 'text-zinc-400 hover:text-zinc-200'
                               }`}
                               title={style.label}
                           >
@@ -727,9 +727,9 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
             )}
 
             {isText && (
-              <section className="space-y-4 border-t border-slate-800 pt-4">
+              <section className="space-y-4 border-t border-zinc-800 pt-4">
                  <div className="flex justify-between items-center">
-                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                    <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
                       <Type size={12} />
                       Typography
                     </h4>
@@ -738,12 +738,12 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                  <div className="space-y-4">
                     {/* Font Family */}
                     <div className="space-y-1.5">
-                        <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Font Family</label>
+                        <label className="text-[10px] text-zinc-500 font-bold uppercase ml-1">Font Family</label>
                         <div className="relative">
                           <select
                               value={(selectedObject as any).fontFamily}
                               onChange={(e) => updateObjectProperty('fontFamily', e.target.value)}
-                              className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] text-slate-300 focus:border-primary-500 outline-none appearance-none cursor-pointer"
+                              className="w-full h-9 bg-zinc-800 border border-zinc-700 rounded-md px-3 text-[11px] text-zinc-300 focus:border-primary-500 outline-none appearance-none cursor-pointer"
                           >
                               <option value="Inter">Inter</option>
                               <option value="Arial">Arial</option>
@@ -753,30 +753,30 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                               <option value="Georgia">Georgia</option>
                               <option value="Verdana">Verdana</option>
                           </select>
-                          <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 rotate-90 pointer-events-none" />
+                          <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 rotate-90 pointer-events-none" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                          {/* Font Size */}
                          <div className="space-y-1.5">
-                              <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Size</label>
+                              <label className="text-[10px] text-zinc-500 font-bold uppercase ml-1">Size</label>
                               <input 
                                 type="number"
                                 value={(selectedObject as any).fontSize}
                                 onChange={(e) => updateObjectProperty('fontSize', parseInt(e.target.value))}
-                                className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-primary-400 focus:outline-none focus:border-primary-500 transition-colors"
+                                className="w-full h-9 bg-zinc-800 border border-zinc-700 rounded-md px-3 text-[11px] font-mono text-primary-400 focus:outline-none focus:border-primary-500 transition-colors"
                               />
                         </div>
                         
                         {/* Font Weight */}
                         <div className="space-y-1.5">
-                            <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Weight</label>
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase ml-1">Weight</label>
                             <div className="relative">
                               <select
                                   value={(selectedObject as any).fontWeight}
                                   onChange={(e) => updateObjectProperty('fontWeight', e.target.value)}
-                                  className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] text-slate-300 focus:border-primary-500 outline-none appearance-none cursor-pointer"
+                                  className="w-full h-9 bg-zinc-800 border border-zinc-700 rounded-md px-3 text-[11px] text-zinc-300 focus:border-primary-500 outline-none appearance-none cursor-pointer"
                               >
                                   <option value="normal">Normal</option>
                                   <option value="bold">Bold</option>
@@ -784,7 +784,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                                   <option value="600">Semi Bold</option>
                                   <option value="800">Extra Bold</option>
                               </select>
-                              <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 rotate-90 pointer-events-none" />
+                              <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 rotate-90 pointer-events-none" />
                             </div>
                         </div>
                     </div>
@@ -792,7 +792,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                     <div className="grid grid-cols-2 gap-3">
                          {/* Line Height */}
                         <div className="space-y-1.5">
-                              <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Line Height</label>
+                              <label className="text-[10px] text-zinc-500 font-bold uppercase ml-1">Line Height</label>
                               <input 
                                 type="number"
                                 step="0.1"
@@ -800,13 +800,13 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                                 max="3"
                                 value={(selectedObject as any).lineHeight}
                                 onChange={(e) => updateObjectProperty('lineHeight', parseFloat(e.target.value))}
-                                className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-primary-400 focus:outline-none focus:border-primary-500 transition-colors"
+                                className="w-full h-9 bg-zinc-800 border border-zinc-700 rounded-md px-3 text-[11px] font-mono text-primary-400 focus:outline-none focus:border-primary-500 transition-colors"
                               />
                         </div>
                          {/* Alignment */}
                          <div className="space-y-1.5">
-                            <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Align</label>
-                            <div className="flex bg-slate-800 rounded-md border border-slate-700 h-9 p-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase ml-1">Align</label>
+                            <div className="flex bg-zinc-800 rounded-md border border-zinc-700 h-9 p-1">
                                 {['left', 'center', 'right'].map((align) => (
                                     <button
                                         key={align}
@@ -814,7 +814,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                                         className={`flex-1 rounded flex items-center justify-center transition-all ${
                                             (selectedObject as any).textAlign === align 
                                             ? 'bg-primary-600 text-white shadow-sm' 
-                                            : 'text-slate-400 hover:text-slate-200'
+                                            : 'text-zinc-400 hover:text-zinc-200'
                                         }`}
                                     >
                                         {align === 'left' && <AlignLeft size={14} />}
@@ -830,13 +830,13 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                     <div className="flex gap-2 pt-1">
                          <button
                             onClick={() => updateObjectProperty('fontStyle', (selectedObject as any).fontStyle === 'italic' ? 'normal' : 'italic')}
-                            className={`flex-1 h-9 rounded-md border flex items-center justify-center text-[10px] font-bold transition-all uppercase tracking-wide ${(selectedObject as any).fontStyle === 'italic' ? 'bg-primary-500/20 text-primary-400 border-primary-500/50' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'}`}
+                            className={`flex-1 h-9 rounded-md border flex items-center justify-center text-[10px] font-bold transition-all uppercase tracking-wide ${(selectedObject as any).fontStyle === 'italic' ? 'bg-primary-500/20 text-primary-400 border-primary-500/50' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'}`}
                          >
                             <Italic size={14} className="mr-2"/> Italic
                          </button>
                           <button
                             onClick={() => updateObjectProperty('underline', !(selectedObject as any).underline)}
-                            className={`flex-1 h-9 rounded-md border flex items-center justify-center text-[10px] font-bold transition-all uppercase tracking-wide ${(selectedObject as any).underline ? 'bg-primary-500/20 text-primary-400 border-primary-500/50' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'}`}
+                            className={`flex-1 h-9 rounded-md border flex items-center justify-center text-[10px] font-bold transition-all uppercase tracking-wide ${(selectedObject as any).underline ? 'bg-primary-500/20 text-primary-400 border-primary-500/50' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'}`}
                          >
                             <Underline size={14} className="mr-2"/> Underline
                          </button>
@@ -845,23 +845,23 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
               </section>
             )}
 
-            <div className="space-y-4 border-t border-slate-800 pt-4">
-              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+            <div className="space-y-4 border-t border-zinc-800 pt-4">
+              <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
                 <Palette size={12} />
                 Appearance & Fill
               </h4>
               <div className="space-y-4">
                 {(isText || isShape) && !isPath && (
                   <div className="space-y-2">
-                    <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Fill Color</label>
+                    <label className="text-[10px] text-zinc-500 font-bold uppercase ml-1">Fill Color</label>
                     <div className="flex items-center gap-3">
-                      <div className="flex-1 h-9 bg-slate-800 rounded-md flex items-center px-3 border border-slate-700">
-                        <Palette size={14} className="text-slate-500 mr-2" />
-                        <span className="text-[11px] text-slate-300 font-mono uppercase truncate">
+                      <div className="flex-1 h-9 bg-zinc-800 rounded-md flex items-center px-3 border border-zinc-700">
+                        <Palette size={14} className="text-zinc-500 mr-2" />
+                        <span className="text-[11px] text-zinc-300 font-mono uppercase truncate">
                           {typeof selectedObject.fill === 'string' ? selectedObject.fill : 'Gradient/Other'}
                         </span>
                       </div>
-                      <div className="w-9 h-9 rounded-md border border-slate-700 bg-slate-800 relative overflow-hidden shrink-0">
+                      <div className="w-9 h-9 rounded-md border border-zinc-700 bg-zinc-800 relative overflow-hidden shrink-0">
                         <input 
                           type="color" 
                           onChange={(e) => {
@@ -880,9 +880,9 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                 )}
                 
                 {isText && (
-                   <div className="space-y-2 pt-2 border-t border-slate-800/50">
+                   <div className="space-y-2 pt-2 border-t border-zinc-800/50">
                       <div className="flex justify-between items-center">
-                        <label className="text-[10px] text-slate-500 font-bold uppercase ml-1 flex items-center gap-1.5">
+                        <label className="text-[10px] text-zinc-500 font-bold uppercase ml-1 flex items-center gap-1.5">
                            <Highlighter size={12} />
                            Text Background
                         </label>
@@ -894,7 +894,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                                updateObjectProperty('backgroundColor', '#000000'); 
                              }
                           }}
-                          className={`p-1 rounded transition-colors ${hasTextBg ? 'text-primary-400 bg-primary-500/10' : 'text-slate-600 hover:text-slate-400'}`}
+                          className={`p-1 rounded transition-colors ${hasTextBg ? 'text-primary-400 bg-primary-500/10' : 'text-zinc-600 hover:text-zinc-400'}`}
                         >
                           {hasTextBg ? <Check size={14} /> : <Plus size={14} />}
                         </button>
@@ -902,13 +902,13 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                       
                       {hasTextBg && (
                         <div className="flex items-center gap-3 animate-in slide-in-from-top-1">
-                           <div className="flex-1 h-9 bg-slate-800 rounded-md flex items-center px-3 border border-slate-700">
-                              <div className="w-4 h-4 rounded-sm border border-slate-600 mr-2" style={{ backgroundColor: currentTextBg as string }} />
-                              <span className="text-[11px] text-slate-300 font-mono uppercase truncate">
+                           <div className="flex-1 h-9 bg-zinc-800 rounded-md flex items-center px-3 border border-zinc-700">
+                              <div className="w-4 h-4 rounded-sm border border-zinc-600 mr-2" style={{ backgroundColor: currentTextBg as string }} />
+                              <span className="text-[11px] text-zinc-300 font-mono uppercase truncate">
                                 {currentTextBg as string}
                               </span>
                            </div>
-                           <div className="w-9 h-9 rounded-md border border-slate-700 bg-slate-800 relative overflow-hidden shrink-0">
+                           <div className="w-9 h-9 rounded-md border border-zinc-700 bg-zinc-800 relative overflow-hidden shrink-0">
                               <input 
                                 type="color" 
                                 onChange={(e) => updateObjectProperty('backgroundColor', e.target.value)}
@@ -923,7 +923,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                 )}
 
                 <div className="space-y-2">
-                  <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold px-1">
+                  <div className="flex justify-between text-[10px] text-zinc-500 uppercase font-bold px-1">
                     <span className="flex items-center gap-1.5"><Ghost size={10} /> {isImage ? 'Global Opacity' : (isPath ? 'Stroke Opacity' : 'Fill Opacity')}</span>
                     <span className="font-mono text-primary-400">{objOpacity}%</span>
                   </div>
@@ -938,16 +938,16 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                         updateFillAlpha(val / 100);
                       }
                     }}
-                    className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                    className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
                   />
                   {!isImage && (
-                    <p className="text-[9px] text-slate-500 font-medium px-1">This transparency only applies to the background fill color, not the border.</p>
+                    <p className="text-[9px] text-zinc-500 font-medium px-1">This transparency only applies to the background fill color, not the border.</p>
                   )}
                 </div>
 
                 {(isImage || (isShape && !isPath)) && (
                   <div className="space-y-2">
-                    <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold px-1">
+                    <div className="flex justify-between text-[10px] text-zinc-500 uppercase font-bold px-1">
                       <span>Corner Rounding</span>
                       <span className="font-mono text-primary-400">{currentRounding}px</span>
                     </div>
@@ -955,7 +955,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                       type="range" min="0" max="200" step="1" 
                       value={currentRounding}
                       onChange={(e) => updateRounding(parseInt(e.target.value))}
-                      className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                      className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
                     />
                   </div>
                 )}
@@ -963,14 +963,14 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
             </div>
 
             {isShape && (
-              <div className="space-y-4 border-t border-slate-800 pt-4">
-                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+              <div className="space-y-4 border-t border-zinc-800 pt-4">
+                <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
                   <SquareIcon size={12} />
                   Stroke & Outline
                 </h4>
                 <div className="flex items-center gap-3">
                     <div className="flex-1 space-y-1.5">
-                       <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Width</label>
+                       <label className="text-[10px] text-zinc-500 font-bold uppercase ml-1">Width</label>
                        <input 
                         type="number"
                         min="0"
@@ -981,10 +981,10 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                           (selectedObject as any)._originalStrokeWidth = val;
                           updateObjectProperty('strokeWidth', val);
                         }}
-                        className={`w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-slate-300 focus:border-primary-500 transition-colors ${isInsideShadow ? 'opacity-50 grayscale' : ''}`}
+                        className={`w-full h-9 bg-zinc-800 border border-zinc-700 rounded-md px-3 text-[11px] font-mono text-zinc-300 focus:border-primary-500 transition-colors ${isInsideShadow ? 'opacity-50 grayscale' : ''}`}
                       />
                     </div>
-                    <div className={`w-9 h-9 mt-4 rounded-md border border-slate-700 bg-slate-800 relative overflow-hidden shrink-0 ${isInsideShadow ? 'opacity-50 grayscale' : ''}`}>
+                    <div className={`w-9 h-9 mt-4 rounded-md border border-zinc-700 bg-zinc-800 relative overflow-hidden shrink-0 ${isInsideShadow ? 'opacity-50 grayscale' : ''}`}>
                       <input 
                         type="color" 
                         disabled={isInsideShadow}
@@ -1005,9 +1005,9 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
               </div>
             )}
 
-            <div className="space-y-6 border-t border-slate-800 pt-4">
+            <div className="space-y-6 border-t border-zinc-800 pt-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-widest flex items-center gap-2">
                   <ShadowIcon size={14} />
                   Shadow & Glow
                 </h3>
@@ -1028,7 +1028,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                       toggleShadowPlacement(false);
                     }
                   }}
-                  className={`p-1.5 rounded-md transition-all ${(currentShadow || isInsideShadow) ? 'text-primary-400 bg-primary-500/10' : 'text-slate-600 hover:bg-slate-800'}`}
+                  className={`p-1.5 rounded-md transition-all ${(currentShadow || isInsideShadow) ? 'text-primary-400 bg-primary-500/10' : 'text-zinc-600 hover:bg-zinc-800'}`}
                 >
                   {(currentShadow || isInsideShadow) ? <Check size={14} /> : <Plus size={14} />}
                 </button>
@@ -1036,16 +1036,16 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
 
               {(currentShadow || isInsideShadow) && (
                 <div className="space-y-5 animate-in slide-in-from-top-2 duration-200">
-                  <div className="bg-slate-800/50 p-1 rounded-lg flex border border-slate-700">
+                  <div className="bg-zinc-800/50 p-1 rounded-lg flex border border-zinc-700">
                     <button 
                       onClick={() => toggleShadowPlacement(false)}
-                      className={`flex-1 py-1.5 text-[10px] font-bold uppercase rounded-md transition-all ${!isInsideShadow ? 'bg-primary-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                      className={`flex-1 py-1.5 text-[10px] font-bold uppercase rounded-md transition-all ${!isInsideShadow ? 'bg-primary-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
                     >
                       Outside (Shadow)
                     </button>
                     <button 
                       onClick={() => toggleShadowPlacement(true)}
-                      className={`flex-1 py-1.5 text-[10px] font-bold uppercase rounded-md transition-all ${isInsideShadow ? 'bg-primary-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                      className={`flex-1 py-1.5 text-[10px] font-bold uppercase rounded-md transition-all ${isInsideShadow ? 'bg-primary-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
                     >
                       Inside (Glow)
                     </button>
@@ -1053,7 +1053,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
 
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold">
+                      <div className="flex justify-between text-[10px] text-zinc-500 uppercase font-bold">
                         <span>{isInsideShadow ? 'Glow Intensity' : 'Blur Radius'}</span>
                         <span className="font-mono text-primary-400">{Math.round(displayBlur)}px</span>
                       </div>
@@ -1061,14 +1061,14 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                         type="range" min="0" max="150" step="1" 
                         value={displayBlur}
                         onChange={(e) => updateObjectShadow({ blur: parseInt(e.target.value) })}
-                        className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                        className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
                       />
                     </div>
 
                     {!isInsideShadow && currentShadow && (
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold">
+                          <div className="flex justify-between text-[10px] text-zinc-500 uppercase font-bold">
                             <span>Offset X</span>
                             <span className="font-mono text-primary-400">{currentShadow.offsetX}</span>
                           </div>
@@ -1076,11 +1076,11 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                             type="range" min="-80" max="80" step="1" 
                             value={currentShadow.offsetX}
                             onChange={(e) => updateObjectShadow({ offsetX: parseInt(e.target.value) })}
-                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                            className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
                           />
                         </div>
                         <div className="space-y-2">
-                          <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold">
+                          <div className="flex justify-between text-[10px] text-zinc-500 uppercase font-bold">
                             <span>Offset Y</span>
                             <span className="font-mono text-primary-400">{currentShadow.offsetY}</span>
                           </div>
@@ -1088,24 +1088,24 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                             type="range" min="-80" max="80" step="1" 
                             value={currentShadow.offsetY}
                             onChange={(e) => updateObjectShadow({ offsetY: parseInt(e.target.value) })}
-                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                            className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
                           />
                         </div>
                       </div>
                     )}
 
                     <div className="space-y-2">
-                      <label className="text-[10px] text-slate-500 font-bold uppercase">Color & Theme</label>
+                      <label className="text-[10px] text-zinc-500 font-bold uppercase">Color & Theme</label>
                       <div className="flex items-center gap-3">
-                        <div className="w-full h-10 bg-slate-800 rounded-md border border-slate-700 relative overflow-hidden flex items-center px-3 hover:border-slate-600 transition-colors">
+                        <div className="w-full h-10 bg-zinc-800 rounded-md border border-zinc-700 relative overflow-hidden flex items-center px-3 hover:border-zinc-600 transition-colors">
                           <input 
                             type="color" 
                             onChange={(e) => updateObjectShadow({ color: e.target.value })}
                             className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                             value={displayColor.startsWith('#') ? displayColor : '#000000'}
                           />
-                          <div className="w-5 h-5 rounded-full border border-slate-600 mr-3 shadow-inner" style={{ backgroundColor: displayColor }} />
-                          <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Change effect color</span>
+                          <div className="w-5 h-5 rounded-full border border-zinc-600 mr-3 shadow-inner" style={{ backgroundColor: displayColor }} />
+                          <span className="text-[10px] text-zinc-400 font-mono uppercase tracking-wider">Change effect color</span>
                         </div>
                       </div>
                     </div>
@@ -1114,16 +1114,16 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
               )}
             </div>
             
-            <div className="grid grid-cols-2 gap-2 pt-6 border-t border-slate-800">
+            <div className="grid grid-cols-2 gap-2 pt-6 border-t border-zinc-800">
               <button 
                 onClick={bringForward}
-                className="h-10 rounded-md bg-slate-800 border border-slate-700 hover:bg-slate-750 hover:text-white text-[10px] font-bold text-slate-400 uppercase transition-all"
+                className="h-10 rounded-md bg-zinc-800 border border-zinc-700 hover:bg-zinc-750 hover:text-white text-[10px] font-bold text-zinc-400 uppercase transition-all"
               >
                 Bring Forward
               </button>
               <button 
                 onClick={sendBackward}
-                className="h-10 rounded-md bg-slate-800 border border-slate-700 hover:bg-slate-750 hover:text-white text-[10px] font-bold text-slate-400 uppercase transition-all"
+                className="h-10 rounded-md bg-zinc-800 border border-zinc-700 hover:bg-zinc-750 hover:text-white text-[10px] font-bold text-zinc-400 uppercase transition-all"
               >
                 Send Backward
               </button>
@@ -1132,8 +1132,8 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
         )}
       </div>
 
-      <div className="p-4 bg-slate-950/50 border-t border-slate-800 shrink-0">
-        <div className="p-4 rounded-2xl border border-primary-500/20 bg-primary-500/5 text-[11px] text-slate-400 leading-relaxed shadow-inner">
+      <div className="p-4 bg-zinc-950/50 border-t border-zinc-800 shrink-0">
+        <div className="p-4 rounded-2xl border border-primary-500/20 bg-primary-500/5 text-[11px] text-zinc-400 leading-relaxed shadow-inner">
           <p className="font-bold text-primary-300 mb-2 uppercase tracking-wide">Refined Transparency</p>
           <p>The Opacity slider now targets the <b>Fill Color</b> specifically for shapes and text, allowing your outlines to stay crisp and fully opaque.</p>
         </div>

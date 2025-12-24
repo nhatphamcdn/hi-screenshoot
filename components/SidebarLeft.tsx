@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { LayoutGrid, Sparkles } from 'lucide-react';
 import { Template } from '../types';
@@ -158,9 +157,9 @@ interface SidebarLeftProps {
 
 const SidebarLeft: React.FC<SidebarLeftProps> = ({ onApplyTemplate }) => {
   return (
-    <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-40">
-      <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+    <aside className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col z-40">
+      <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+        <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
           <LayoutGrid size={14} />
           Templates
         </h2>
@@ -173,31 +172,31 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ onApplyTemplate }) => {
             onClick={() => onApplyTemplate(tpl)}
             className="w-full group text-left transition-all hover:translate-y-[-2px]"
           >
-            <div className="relative aspect-video w-full rounded-xl overflow-hidden border-2 border-slate-800 group-hover:border-indigo-500/50 group-hover:shadow-[0_0_20px_rgba(79,70,229,0.2)] transition-all">
+            <div className="relative aspect-video w-full rounded-xl overflow-hidden border-2 border-zinc-800 group-hover:border-indigo-500/50 group-hover:shadow-[0_0_20px_rgba(79,70,229,0.2)] transition-all">
               <img 
                 src={tpl.preview} 
                 alt={tpl.name} 
                 className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-500" 
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
                 <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-tighter">Apply Preset</span>
               </div>
             </div>
             <div className="mt-2 flex items-center justify-between">
-              <p className="text-xs font-semibold text-slate-400 group-hover:text-white transition-colors truncate">
+              <p className="text-xs font-semibold text-zinc-400 group-hover:text-white transition-colors truncate">
                 {tpl.name}
               </p>
               <div 
-                className="w-3 h-3 rounded-full border border-slate-700" 
+                className="w-3 h-3 rounded-full border border-zinc-700" 
                 style={{ background: tpl.config.backgroundGradient || tpl.config.backgroundColor }}
               />
             </div>
           </button>
         ))}
       </div>
-      <div className="p-4 bg-slate-950/50 border-t border-slate-800">
-        <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
-          <p className="text-[10px] text-slate-500 leading-relaxed text-center">
+      <div className="p-4 bg-zinc-950/50 border-t border-zinc-800">
+        <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700/50">
+          <p className="text-[10px] text-zinc-500 leading-relaxed text-center">
             Templates automatically adjust padding, gradients, and shadows for your screenshot.
           </p>
         </div>

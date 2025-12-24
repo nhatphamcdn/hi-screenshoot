@@ -806,34 +806,34 @@ const App: React.FC = () => {
 
   return (
     <div 
-      className="flex flex-col h-screen bg-slate-950 text-slate-200 overflow-hidden relative"
+      className="flex flex-col h-screen bg-zinc-950 text-zinc-200 overflow-hidden relative"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       {isDragging && (
-        <div className="absolute inset-0 z-[60] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-8 transition-all animate-in fade-in duration-200 pointer-events-none">
+        <div className="absolute inset-0 z-[60] bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-8 transition-all animate-in fade-in duration-200 pointer-events-none">
             <div className="w-full h-full border-4 border-dashed border-primary-500 rounded-3xl flex flex-col items-center justify-center gap-6">
                  <div className="w-24 h-24 rounded-full bg-primary-500/20 flex items-center justify-center animate-bounce">
                     <Upload size={48} className="text-primary-400" />
                  </div>
                  <h2 className="text-3xl font-bold text-white">Drop your image here</h2>
-                 <p className="text-slate-400 text-lg">Add to your canvas instantly</p>
+                 <p className="text-zinc-400 text-lg">Add to your canvas instantly</p>
             </div>
         </div>
       )}
 
       {isGenerating && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-300">
-           <div className="bg-slate-900 border border-slate-700 p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full mx-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/70 backdrop-blur-sm animate-in fade-in duration-300">
+           <div className="bg-zinc-900 border border-zinc-700 p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full mx-4">
                <div className="relative">
                  <div className="absolute inset-0 bg-primary-500/20 blur-xl rounded-full"></div>
                  <Loader2 size={48} className="text-primary-400 animate-spin relative z-10" />
                </div>
                <div className="text-center space-y-2">
                  <h3 className="text-xl font-bold text-white">Generating Image</h3>
-                 <p className="text-slate-400 text-sm">Processing with AI...</p>
-                 <p className="text-xs text-slate-500 mt-2">Generating Magenta Mask & Removing Background...</p>
+                 <p className="text-zinc-400 text-sm">Processing with AI...</p>
+                 <p className="text-xs text-zinc-500 mt-2">Generating Magenta Mask & Removing Background...</p>
                </div>
            </div>
         </div>
@@ -867,7 +867,7 @@ const App: React.FC = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* SidebarLeft removed */}
 
-        <main ref={containerRef} className="flex-1 flex flex-col items-center justify-center bg-slate-900 overflow-hidden relative">
+        <main ref={containerRef} className="flex-1 flex flex-col items-center justify-center bg-zinc-900 overflow-hidden relative">
           
           <div 
             id="canvas-wrapper" 
@@ -887,7 +887,7 @@ const App: React.FC = () => {
                            className="absolute -right-5 top-1/2 -translate-y-1/2 w-4 h-16 cursor-ew-resize flex items-center justify-center group/handle hover:scale-110 transition-transform"
                            title="Drag to resize width"
                         >
-                            <div className="w-1.5 h-8 bg-slate-600/50 rounded-full group-hover/handle:bg-primary-500 backdrop-blur-sm border border-white/10 transition-colors shadow-sm" />
+                            <div className="w-1.5 h-8 bg-zinc-600/50 rounded-full group-hover/handle:bg-primary-500 backdrop-blur-sm border border-white/10 transition-colors shadow-sm" />
                         </div>
 
                         {/* Bottom Handle (Height) */}
@@ -896,7 +896,7 @@ const App: React.FC = () => {
                            className="absolute -bottom-5 left-1/2 -translate-x-1/2 h-4 w-16 cursor-ns-resize flex items-center justify-center group/handle hover:scale-110 transition-transform"
                            title="Drag to resize height"
                         >
-                             <div className="h-1.5 w-8 bg-slate-600/50 rounded-full group-hover/handle:bg-primary-500 backdrop-blur-sm border border-white/10 transition-colors shadow-sm" />
+                             <div className="h-1.5 w-8 bg-zinc-600/50 rounded-full group-hover/handle:bg-primary-500 backdrop-blur-sm border border-white/10 transition-colors shadow-sm" />
                         </div>
 
                         {/* Corner Handle (Both) */}
@@ -905,7 +905,7 @@ const App: React.FC = () => {
                            className="absolute -right-5 -bottom-5 w-6 h-6 cursor-nwse-resize flex items-center justify-center group/handle"
                            title="Drag to resize both"
                         >
-                             <div className="w-3 h-3 bg-white border-2 border-slate-600 rounded-full group-hover/handle:border-primary-500 group-hover/handle:scale-125 transition-all shadow-md" />
+                             <div className="w-3 h-3 bg-white border-2 border-zinc-600 rounded-full group-hover/handle:border-primary-500 group-hover/handle:scale-125 transition-all shadow-md" />
                         </div>
                     </>
                 )}
@@ -915,25 +915,25 @@ const App: React.FC = () => {
           {!hasImage && (
             <div 
               onClick={() => fileInputRef.current?.click()}
-              className="w-full max-w-lg aspect-video rounded-3xl border-2 border-dashed border-slate-700 bg-slate-800/40 hover:bg-slate-800/60 hover:border-primary-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-5 group"
+              className="w-full max-w-lg aspect-video rounded-3xl border-2 border-dashed border-zinc-700 bg-zinc-800/40 hover:bg-zinc-800/60 hover:border-primary-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-5 group"
             >
-              <div className="w-20 h-20 rounded-2xl bg-slate-700/50 group-hover:bg-primary-600/20 flex items-center justify-center transition-all group-hover:scale-110">
-                <Upload size={36} className="text-slate-400 group-hover:text-primary-400" />
+              <div className="w-20 h-20 rounded-2xl bg-zinc-700/50 group-hover:bg-primary-600/20 flex items-center justify-center transition-all group-hover:scale-110">
+                <Upload size={36} className="text-zinc-400 group-hover:text-primary-400" />
               </div>
               <div className="text-center px-6">
-                <p className="text-xl font-bold text-slate-200">Snap a Screenshot Here</p>
-                <p className="text-sm text-slate-500 mt-2">Upload images or <span className="text-primary-400 font-bold hover:underline" onClick={(e) => { e.stopPropagation(); handleGenerateImage(); }}>generate with AI</span></p>
+                <p className="text-xl font-bold text-zinc-200">Snap a Screenshot Here</p>
+                <p className="text-sm text-zinc-500 mt-2">Upload images or <span className="text-primary-400 font-bold hover:underline" onClick={(e) => { e.stopPropagation(); handleGenerateImage(); }}>generate with AI</span></p>
               </div>
             </div>
           )}
           
           {hasImage && (
-            <div className="absolute bottom-8 px-6 py-3 bg-slate-950/80 backdrop-blur-2xl rounded-2xl text-[11px] text-slate-400 border border-slate-800 shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4">
+            <div className="absolute bottom-8 px-6 py-3 bg-zinc-950/80 backdrop-blur-2xl rounded-2xl text-[11px] text-zinc-400 border border-zinc-800 shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4">
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="font-bold text-slate-200 uppercase tracking-tighter">Multi-Object Canvas Active</span>
+                <span className="font-bold text-zinc-200 uppercase tracking-tighter">Multi-Object Canvas Active</span>
               </div>
-              <div className="w-px h-4 bg-slate-800" />
+              <div className="w-px h-4 bg-zinc-800" />
               <span>Composition mode enabled</span>
             </div>
           )}
