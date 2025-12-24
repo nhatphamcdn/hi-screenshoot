@@ -9,7 +9,8 @@ import {
   Trash2,
   ArrowRight,
   Sparkles,
-  Ghost
+  Ghost,
+  RotateCcw
 } from 'lucide-react';
 
 interface ToolbarProps {
@@ -24,6 +25,7 @@ interface ToolbarProps {
   onGenerateImage?: () => void;
   aiTransparentBg?: boolean;
   onToggleAiTransparentBg?: () => void;
+  onReset?: () => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({ 
@@ -37,7 +39,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   selectionType,
   onGenerateImage,
   aiTransparentBg,
-  onToggleAiTransparentBg
+  onToggleAiTransparentBg,
+  onReset
 }) => {
   const isImageSelected = hasSelection && selectionType === 'image';
 
@@ -56,6 +59,20 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <div className="h-8 w-px bg-slate-800 mx-2" />
 
         <div className="flex items-center gap-1">
+          {onReset && (
+            <>
+              <button 
+                onClick={onReset}
+                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-slate-800 text-slate-300 transition-colors text-sm font-medium"
+                title="Reset to Start"
+              >
+                <RotateCcw size={18} />
+                <span>Reset</span>
+              </button>
+              <div className="w-px h-4 bg-slate-800 mx-2" />
+            </>
+          )}
+          
           <button 
             onClick={onUpload}
             className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-slate-800 text-slate-300 transition-colors text-sm font-medium"

@@ -20,6 +20,17 @@ import { EditorState, Template } from './types';
 
 type DrawingTool = 'none' | 'rect' | 'circle' | 'arrow';
 
+const INITIAL_EDITOR_STATE: EditorState = {
+  backgroundColor: '#ffffff',
+  backgroundGradient: '',
+  padding: 64, 
+  borderRadius: 24,
+  shadowBlur: 40,
+  shadowOpacity: 0.4,
+  aspectRatio: 'Auto',
+  showBrowserFrame: true,
+};
+
 const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
@@ -65,18 +76,32 @@ const App: React.FC = () => {
   const currentShape = useRef<fabric.FabricObject | null>(null);
   const startPoint = useRef<{ x: number, y: number } | null>(null);
 
-  const [editorState, setEditorState] = useState<EditorState>({
-    backgroundColor: '#ffffff',
-    backgroundGradient: '',
-    padding: 64, 
-    borderRadius: 24,
-    shadowBlur: 40,
-    shadowOpacity: 0.4,
-    aspectRatio: 'Auto',
-    showBrowserFrame: true,
-  });
+  const [editorState, setEditorState] = useState<EditorState>(INITIAL_EDITOR_STATE);
 
   const forceRefresh = () => setRefresh(prev => prev + 1);
+
+  const handleReset = () => {
+    const canvas = fabricCanvasRef.current;
+    if (canvas) {
+      canvas.clear();
+      canvas.backgroundColor = 'transparent';
+      canvas.setDimensions({ width: 400, height: 300 }); // Reset to default small size
+    }
+
+    setHasImage(false);
+    setSelectedObject(null);
+    setActiveTool('none');
+    setAiTransparentBg(false);
+    setCanvasDimensions({ width: 0, height: 0 });
+    setEditorState(INITIAL_EDITOR_STATE);
+    setZoomScale(1);
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
+    setRefresh(prev => prev + 1);
+  };
 
   // Sync fabric canvas size with editorState or auto-dimensions
   useEffect(() => {
@@ -735,6 +760,7 @@ const App: React.FC = () => {
         onGenerateImage={handleGenerateImage}
         aiTransparentBg={aiTransparentBg}
         onToggleAiTransparentBg={() => setAiTransparentBg(prev => !prev)}
+        onReset={handleReset}
       />
       
       <input 
