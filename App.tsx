@@ -306,7 +306,6 @@ const App: React.FC = () => {
           const fabricImg = new fabric.FabricImage(imgObj);
           
           let scale = 1;
-          const buffer = 200;
 
           if (!hasImage && index === 0 && !editorState.customWidth) {
             const maxW = 1000; 
@@ -315,15 +314,16 @@ const App: React.FC = () => {
             const finalWidth = fabricImg.width! * scale;
             const finalHeight = fabricImg.height! * scale;
 
-            const canvasW = finalWidth + buffer;
-            const canvasH = finalHeight + buffer;
+            // Remove fixed buffer so canvas fits image exactly
+            const canvasW = finalWidth;
+            const canvasH = finalHeight;
 
             canvas.setDimensions({ width: canvasW, height: canvasH });
             setCanvasDimensions({ width: canvasW, height: canvasH });
             
             fabricImg.set({
-              left: buffer / 2,
-              top: buffer / 2,
+              left: 0,
+              top: 0,
               scaleX: scale,
               scaleY: scale,
             });
