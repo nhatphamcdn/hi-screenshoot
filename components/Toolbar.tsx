@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Plus, 
@@ -8,14 +7,15 @@ import {
   Square, 
   Circle as CircleIcon,
   Trash2,
-  Share2
+  Share2,
+  ArrowRight
 } from 'lucide-react';
 
 interface ToolbarProps {
   onUpload: () => void;
   onAddText: () => void;
-  activeTool: 'none' | 'rect' | 'circle';
-  onSetTool: (tool: 'none' | 'rect' | 'circle') => void;
+  activeTool: 'none' | 'rect' | 'circle' | 'arrow';
+  onSetTool: (tool: 'none' | 'rect' | 'circle' | 'arrow') => void;
   onExport: () => void;
   onDelete: () => void;
   hasSelection: boolean;
@@ -72,6 +72,13 @@ const Toolbar: React.FC<ToolbarProps> = ({
           >
             <CircleIcon size={18} />
             <span>Circle</span>
+          </button>
+          <button 
+            onClick={() => onSetTool('arrow')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm font-medium ${activeTool === 'arrow' ? 'bg-indigo-600/20 text-indigo-400' : 'hover:bg-slate-800 text-slate-300'}`}
+          >
+            <ArrowRight size={18} />
+            <span>Arrow</span>
           </button>
         </div>
       </div>

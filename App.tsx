@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import * as fabric from 'fabric';
 import { 
@@ -8,14 +7,15 @@ import {
   Square, 
   Circle as CircleIcon,
   Trash2,
-  Upload
+  Upload,
+  ArrowRight
 } from 'lucide-react';
 import SidebarLeft from './components/SidebarLeft';
 import SidebarRight from './components/SidebarRight';
 import Toolbar from './components/Toolbar';
 import { EditorState, Template } from './types';
 
-type DrawingTool = 'none' | 'rect' | 'circle';
+type DrawingTool = 'none' | 'rect' | 'circle' | 'arrow';
 
 const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -31,8 +31,29 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeToolRef = useRef<DrawingTool>('none');
+  
   useEffect(() => {
     activeToolRef.current = activeTool;
+    const canvas = fabricCanvasRef.current;
+    if (canvas) {
+      const isDrawingMode = activeTool !== 'none';
+      canvas.selection = !isDrawingMode;
+      canvas.defaultCursor = isDrawingMode ? 'crosshair' : 'default';
+      
+      canvas.getObjects().forEach((obj) => {
+        obj.set({
+          selectable: !isDrawingMode,
+          evented: !isDrawingMode // Prevents objects from catching events (dragging) while drawing
+        });
+      });
+      
+      // If entering drawing mode, discard active selection to avoid confusion
+      if (isDrawingMode) {
+        canvas.discardActiveObject();
+      }
+      
+      canvas.requestRenderAll();
+    }
   }, [activeTool]);
 
   const isDrawing = useRef(false);
@@ -52,16 +73,35 @@ const App: React.FC = () => {
 
   const forceRefresh = () => setRefresh(prev => prev + 1);
 
+  // Sync fabric canvas size with editorState or auto-dimensions
+  useEffect(() => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas) return;
+
+    const targetW = editorState.customWidth || canvasDimensions.width || 400;
+    const targetH = editorState.customHeight || canvasDimensions.height || 300;
+
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.setDimensions({ width: targetW, height: targetH });
+      canvas.renderAll();
+    }
+  }, [editorState.customWidth, editorState.customHeight, canvasDimensions]);
+
   // Calculate the zoom scale to fit the wrapper (canvas + padding) into the viewport
   useEffect(() => {
     const updateScale = () => {
-      if (!containerRef.current || canvasDimensions.width === 0) return;
+      if (!containerRef.current) return;
 
       const viewportWidth = containerRef.current.clientWidth - 100; 
       const viewportHeight = containerRef.current.clientHeight - 100;
 
-      const totalWidth = canvasDimensions.width + (editorState.padding * 2);
-      const totalHeight = canvasDimensions.height + (editorState.padding * 2);
+      const effectiveW = editorState.customWidth || canvasDimensions.width;
+      const effectiveH = editorState.customHeight || canvasDimensions.height;
+
+      if (!effectiveW || !effectiveH) return;
+
+      const totalWidth = effectiveW + (editorState.padding * 2);
+      const totalHeight = effectiveH + (editorState.padding * 2);
 
       const scale = Math.min(viewportWidth / totalWidth, viewportHeight / totalHeight, 1);
       setZoomScale(scale);
@@ -70,7 +110,7 @@ const App: React.FC = () => {
     updateScale();
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
-  }, [canvasDimensions, editorState.padding, hasImage]);
+  }, [canvasDimensions, editorState.padding, editorState.customWidth, editorState.customHeight, hasImage]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -92,6 +132,9 @@ const App: React.FC = () => {
     canvas.on('selection:updated', updateSelection);
     canvas.on('selection:cleared', () => setSelectedObject(null));
     canvas.on('object:modified', forceRefresh);
+    canvas.on('object:scaling', forceRefresh);
+    canvas.on('object:moving', forceRefresh);
+    canvas.on('object:rotating', forceRefresh);
 
     canvas.on('mouse:down', (o) => {
       const tool = activeToolRef.current;
@@ -104,10 +147,12 @@ const App: React.FC = () => {
       const commonProps = {
         left: pointer.x,
         top: pointer.y,
-        fill: 'transparent',
-        stroke: '#6366f1',
-        strokeWidth: 3,
+        fill: '#6366f1',
+        stroke: '#4f46e5',
+        strokeWidth: 2,
+        strokeUniform: true,
         selectable: false,
+        evented: false, // Ensure the shape being drawn doesn't capture events itself immediately
       };
 
       if (tool === 'rect') {
@@ -123,9 +168,19 @@ const App: React.FC = () => {
           ...commonProps,
           radius: 0,
         });
+      } else if (tool === 'arrow') {
+        currentShape.current = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], {
+          ...commonProps,
+          fill: 'transparent',
+          strokeWidth: 4,
+          stroke: '#6366f1'
+        });
       }
 
       if (currentShape.current) {
+        // Tag original stroke for shadow management
+        (currentShape.current as any)._originalStroke = commonProps.stroke;
+        (currentShape.current as any)._originalStrokeWidth = commonProps.strokeWidth;
         canvas.add(currentShape.current);
       }
     });
@@ -154,6 +209,11 @@ const App: React.FC = () => {
           left: Math.min(pointer.x, startPoint.current.x),
           top: Math.min(pointer.y, startPoint.current.y),
         });
+      } else if (tool === 'arrow' && currentShape.current instanceof fabric.Line) {
+        currentShape.current.set({
+          x2: pointer.x,
+          y2: pointer.y
+        });
       }
       canvas.renderAll();
     });
@@ -161,11 +221,61 @@ const App: React.FC = () => {
     canvas.on('mouse:up', () => {
       if (!isDrawing.current) return;
       isDrawing.current = false;
-      if (currentShape.current) {
-        currentShape.current.set({ selectable: true });
+      
+      const tool = activeToolRef.current;
+      if (tool === 'arrow' && currentShape.current instanceof fabric.Line) {
+        const line = currentShape.current;
+        const x1 = line.x1!;
+        const y1 = line.y1!;
+        const x2 = line.x2!;
+        const y2 = line.y2!;
+        
+        // Remove the temporary line
+        canvas.remove(line);
+
+        // Check if line is too small, if so, ignore
+        const dist = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+        if (dist < 5) {
+             forceRefresh();
+             currentShape.current = null;
+             setActiveTool('none');
+             return;
+        }
+
+        // Calculate arrow path
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        const headLength = 20;
+        const xLeft = x2 - headLength * Math.cos(angle - Math.PI / 6);
+        const yLeft = y2 - headLength * Math.sin(angle - Math.PI / 6);
+        const xRight = x2 - headLength * Math.cos(angle + Math.PI / 6);
+        const yRight = y2 - headLength * Math.sin(angle + Math.PI / 6);
+
+        const pathData = `M ${x1} ${y1} L ${x2} ${y2} M ${x2} ${y2} L ${xLeft} ${yLeft} M ${x2} ${y2} L ${xRight} ${yRight}`;
+
+        const arrow = new fabric.Path(pathData, {
+          stroke: '#6366f1',
+          strokeWidth: 4,
+          fill: 'transparent',
+          strokeCap: 'round',
+          strokeJoin: 'round',
+          selectable: true,
+          strokeUniform: true
+        });
+
+        // Store original stroke props for Sidebar logic
+        (arrow as any)._originalStroke = '#6366f1';
+        (arrow as any)._originalStrokeWidth = 4;
+
+        canvas.add(arrow);
+        canvas.setActiveObject(arrow);
+        currentShape.current = arrow;
+      } else if (currentShape.current) {
+        // For Rect and Circle
+        currentShape.current.set({ selectable: true, evented: true });
         canvas.setActiveObject(currentShape.current);
-        forceRefresh();
       }
+      
+      forceRefresh();
       currentShape.current = null;
       setActiveTool('none');
     });
@@ -176,7 +286,6 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Fixed handleFileUpload by explicitly casting files to File[] to avoid 'unknown' type errors when passed to reader.readAsDataURL
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     const canvas = fabricCanvasRef.current;
@@ -189,15 +298,13 @@ const App: React.FC = () => {
         if (typeof result !== 'string') return;
         
         const imgObj = new Image();
-        // Fixed image loading by setting the onload handler before setting the src attribute
         imgObj.onload = () => {
           const fabricImg = new fabric.FabricImage(imgObj);
           
           let scale = 1;
           const buffer = 200;
 
-          // If this is the very first image being added, set the canvas dimensions
-          if (!hasImage && index === 0) {
+          if (!hasImage && index === 0 && !editorState.customWidth) {
             const maxW = 1000; 
             const maxH = 800;
             scale = Math.min(maxW / fabricImg.width!, maxH / fabricImg.height!, 1);
@@ -218,7 +325,6 @@ const App: React.FC = () => {
             });
             setHasImage(true);
           } else {
-            // For subsequent images, scale them to fit within the existing canvas but keep them manageable
             const canvasW = canvas.width;
             const canvasH = canvas.height;
             const targetW = canvasW * 0.6;
@@ -226,7 +332,6 @@ const App: React.FC = () => {
             
             scale = Math.min(targetW / fabricImg.width!, targetH / fabricImg.height!, 1);
             
-            // Offset subsequent images so they don't perfectly overlap
             const offset = (index + 1) * 30;
             fabricImg.set({
               left: (canvasW - (fabricImg.width! * scale)) / 2 + offset,
@@ -234,10 +339,12 @@ const App: React.FC = () => {
               scaleX: scale,
               scaleY: scale,
             });
+            setHasImage(true);
           }
 
           fabricImg.set({
             selectable: true,
+            evented: true, // Ensure uploaded images are interactive by default
             shadow: new fabric.Shadow({
               color: `rgba(0, 0, 0, ${editorState.shadowOpacity})`,
               blur: editorState.shadowBlur,

@@ -8,6 +8,8 @@ export interface EditorState {
   shadowOpacity: number;
   aspectRatio: '16:9' | '4:3' | '1:1' | '9:16' | 'Auto';
   showBrowserFrame: boolean;
+  customWidth?: number;
+  customHeight?: number;
 }
 
 export type Template = {

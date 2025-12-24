@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import * as fabric from 'fabric';
 import { 
   Palette, 
@@ -13,7 +12,14 @@ import {
   X, 
   Plus, 
   Image as ImageIcon, 
-  Wand2 as ShadowIcon 
+  Wand2 as ShadowIcon,
+  Move,
+  Lock,
+  Unlock,
+  Maximize2,
+  Square as SquareIcon,
+  Ghost,
+  Highlighter
 } from 'lucide-react';
 import { EditorState } from '../types';
 
@@ -27,10 +33,25 @@ interface SidebarRightProps {
 }
 
 const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedObject, fabricCanvas, onObjectChange, refresh }) => {
-  
+  const [lockAspect, setLockAspect] = useState(true);
+
   const updateObjectProperty = (prop: string, value: any) => {
     if (selectedObject && fabricCanvas) {
       selectedObject.set(prop as any, value);
+      fabricCanvas.renderAll();
+      onObjectChange?.();
+    }
+  };
+
+  // Helper to handle fill color with alpha channel
+  const updateFillAlpha = (alpha: number) => {
+    if (!selectedObject || !fabricCanvas) return;
+    
+    const fill = selectedObject.fill;
+    if (typeof fill === 'string' && fill !== 'transparent') {
+      const color = new fabric.Color(fill);
+      color.setAlpha(alpha);
+      selectedObject.set('fill', color.toRgba());
       fabricCanvas.renderAll();
       onObjectChange?.();
     }
@@ -43,7 +64,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
       absolutePositioned: false,
     };
 
-    if (obj.type === 'rect' || obj.type === 'image') {
+    if (obj.type === 'image') {
       const rx = (obj as any)._cornerRadius || 0;
       return new fabric.Rect({
         ...common,
@@ -51,11 +72,6 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
         height: obj.height,
         rx: rx,
         ry: rx,
-      });
-    } else if (obj.type === 'circle') {
-      return new fabric.Circle({
-        ...common,
-        radius: (obj as any).radius,
       });
     }
     return null;
@@ -66,8 +82,6 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
       const isInside = (selectedObject as any)._isInsideShadow;
       
       if (isInside) {
-        // In "Inside" mode, 'blur' controls the stroke width
-        // and 'color' controls the stroke color
         if (updates.blur !== undefined) {
           selectedObject.set('strokeWidth', updates.blur);
         }
@@ -108,11 +122,16 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
     }
   };
 
-  const updateImageBorderRadius = (value: number) => {
+  const updateRounding = (value: number) => {
     if (selectedObject && fabricCanvas) {
       (selectedObject as any)._cornerRadius = value;
-      // Re-apply clipPath which handles both border radius and inner shadow clipping
-      selectedObject.set('clipPath', getObjectClipPath(selectedObject));
+      
+      if (selectedObject.type === 'rect') {
+        selectedObject.set({ rx: value, ry: value });
+      } else if (selectedObject.type === 'image') {
+        selectedObject.set('clipPath', getObjectClipPath(selectedObject));
+      }
+      
       fabricCanvas.renderAll();
       onObjectChange?.();
     }
@@ -124,8 +143,11 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
     (selectedObject as any)._isInsideShadow = isInside;
     
     if (isInside) {
-      // Switch to INNER shadow simulation
-      // 1. Save current shadow color/blur if exists
+      if (!(selectedObject as any)._originalStroke) {
+        (selectedObject as any)._originalStroke = selectedObject.stroke;
+        (selectedObject as any)._originalStrokeWidth = selectedObject.strokeWidth;
+      }
+
       const color = selectedObject.shadow instanceof fabric.Shadow ? selectedObject.shadow.color : 'rgba(0,0,0,0.3)';
       const blur = selectedObject.shadow instanceof fabric.Shadow ? selectedObject.shadow.blur : 20;
 
@@ -134,30 +156,59 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
         stroke: color,
         strokeWidth: blur,
         strokeUniform: true,
-        // We MUST use a clipPath to hide the part of the stroke that falls outside
-        clipPath: getObjectClipPath(selectedObject)
+        clipPath: selectedObject.type === 'image' ? getObjectClipPath(selectedObject) : null
       });
     } else {
-      // Switch back to OUTER shadow
-      const color = typeof selectedObject.stroke === 'string' ? selectedObject.stroke : 'rgba(0,0,0,0.4)';
-      const blur = selectedObject.strokeWidth || 40;
+      const restoredStroke = (selectedObject as any)._originalStroke || 'transparent';
+      const restoredStrokeWidth = (selectedObject as any)._originalStrokeWidth || 0;
+
+      const color = typeof selectedObject.stroke === 'string' && selectedObject.stroke !== 'transparent' 
+        ? selectedObject.stroke 
+        : 'rgba(0,0,0,0.4)';
+      const blur = selectedObject.strokeWidth > 0 && isInsideShadow ? selectedObject.strokeWidth : 40;
 
       selectedObject.set({
-        stroke: 'transparent',
-        strokeWidth: 0,
+        stroke: restoredStroke,
+        strokeWidth: restoredStrokeWidth,
         shadow: new fabric.Shadow({
           color: color,
           blur: blur,
           offsetX: 0,
           offsetY: 10
         }),
-        // Only keep clipPath if it's an image with border radius
-        clipPath: selectedObject.type === 'image' || (selectedObject as any)._cornerRadius > 0 
-          ? getObjectClipPath(selectedObject) 
-          : null
+        clipPath: selectedObject.type === 'image' ? getObjectClipPath(selectedObject) : null
       });
     }
     
+    fabricCanvas.renderAll();
+    onObjectChange?.();
+  };
+
+  const handleSizeChange = (dim: 'width' | 'height', value: number) => {
+    if (!selectedObject || !fabricCanvas) return;
+    
+    if (dim === 'width') {
+      const scaleX = value / selectedObject.width;
+      if (lockAspect) {
+        selectedObject.set({ scaleX, scaleY: scaleX });
+      } else {
+        selectedObject.set('scaleX', scaleX);
+      }
+    } else {
+      const scaleY = value / selectedObject.height;
+      if (lockAspect) {
+        selectedObject.set({ scaleX: scaleY, scaleY: scaleY });
+      } else {
+        selectedObject.set('scaleY', scaleY);
+      }
+    }
+    fabricCanvas.renderAll();
+    onObjectChange?.();
+  };
+
+  const handlePositionChange = (axis: 'left' | 'top', value: number) => {
+    if (!selectedObject || !fabricCanvas) return;
+    selectedObject.set(axis, value);
     fabricCanvas.renderAll();
     onObjectChange?.();
   };
@@ -171,9 +222,10 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
     'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
   ];
 
-  const isShape = selectedObject?.type === 'rect' || selectedObject?.type === 'circle';
+  const isShape = selectedObject?.type === 'rect' || selectedObject?.type === 'circle' || selectedObject?.type === 'path';
   const isText = selectedObject?.type === 'i-text';
   const isImage = selectedObject?.type === 'image';
+  const isPath = selectedObject?.type === 'path';
 
   const bringForward = () => {
     if (fabricCanvas && selectedObject) {
@@ -191,15 +243,42 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
     }
   };
 
-  const currentCornerRadius = (selectedObject as any)?._cornerRadius || 0;
+  const currentRounding = (selectedObject as any)?._cornerRadius || 0;
   const isInsideShadow = (selectedObject as any)?._isInsideShadow || false;
   
-  // Resolve current visual shadow properties
   const currentShadow = selectedObject?.shadow as fabric.Shadow | undefined;
   const displayBlur = isInsideShadow ? (selectedObject?.strokeWidth || 0) : (currentShadow?.blur || 0);
   const displayColor = isInsideShadow 
     ? (typeof selectedObject?.stroke === 'string' ? selectedObject.stroke : '#000000') 
     : (currentShadow?.color?.toString() || '#000000');
+
+  const objWidth = selectedObject ? Math.round(selectedObject.getScaledWidth()) : 0;
+  const objHeight = selectedObject ? Math.round(selectedObject.getScaledHeight()) : 0;
+  const objLeft = selectedObject ? Math.round(selectedObject.left) : 0;
+  const objTop = selectedObject ? Math.round(selectedObject.top) : 0;
+
+  // Determine opacity value based on object type
+  let objOpacity = 100;
+  if (selectedObject) {
+    if (isImage) {
+      objOpacity = Math.round(selectedObject.opacity * 100);
+    } else if (isText || isShape) {
+      const fill = selectedObject.fill;
+      if (typeof fill === 'string' && fill !== 'transparent') {
+        const color = new fabric.Color(fill);
+        objOpacity = Math.round(color.getAlpha() * 100);
+      }
+    }
+  }
+
+  const canvasWidth = fabricCanvas ? fabricCanvas.width : 0;
+  const canvasHeight = fabricCanvas ? fabricCanvas.height : 0;
+
+  const currentStroke = selectedObject?.stroke || 'transparent';
+  const currentStrokeWidth = selectedObject?.strokeWidth || 0;
+  
+  const currentTextBg = selectedObject?.backgroundColor;
+  const hasTextBg = currentTextBg && currentTextBg !== 'transparent';
 
   return (
     <aside className="w-80 bg-slate-900 border-l border-slate-800 flex flex-col z-40 overflow-y-auto custom-scrollbar">
@@ -249,9 +328,30 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
             <section className="space-y-6">
               <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                 <Layout size={14} />
-                Dimensions
+                Scene Layout
               </h3>
               <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Canvas W</label>
+                      <input 
+                        type="number"
+                        value={canvasWidth}
+                        onChange={(e) => setState(s => ({ ...s, customWidth: parseInt(e.target.value) || 1 }))}
+                        className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-slate-300 focus:border-indigo-500 transition-colors"
+                      />
+                   </div>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Canvas H</label>
+                      <input 
+                        type="number"
+                        value={canvasHeight}
+                        onChange={(e) => setState(s => ({ ...s, customHeight: parseInt(e.target.value) || 1 }))}
+                        className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-slate-300 focus:border-indigo-500 transition-colors"
+                      />
+                   </div>
+                </div>
+
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs text-slate-400">
                     <span>Padding</span>
@@ -283,53 +383,227 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
           <section className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <h3 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
-                <Maximize size={14} />
-                {selectedObject.type?.toUpperCase()} Props
+                <Maximize2 size={14} />
+                {selectedObject.type === 'path' ? 'ARROW/LINE' : selectedObject.type?.toUpperCase()} Props
               </h3>
             </div>
 
-            {(isImage || isShape) && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold">
-                    <span>Object Rounding</span>
-                    <span className="font-mono text-indigo-400">{currentCornerRadius}px</span>
-                  </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                  <Move size={12} />
+                  Geometry & Transform
+                </h4>
+                <button 
+                  onClick={() => setLockAspect(!lockAspect)}
+                  className={`p-1 rounded transition-colors ${lockAspect ? 'text-indigo-400' : 'text-slate-600 hover:text-slate-400'}`}
+                  title={lockAspect ? "Unlock Aspect Ratio" : "Lock Aspect Ratio"}
+                >
+                  {lockAspect ? <Lock size={14} /> : <Unlock size={14} />}
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Width (px)</label>
                   <input 
-                    type="range" min="0" max="200" step="1" 
-                    value={currentCornerRadius}
-                    onChange={(e) => updateImageBorderRadius(parseInt(e.target.value))}
-                    className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                    type="number"
+                    value={objWidth}
+                    onChange={(e) => handleSizeChange('width', parseInt(e.target.value) || 1)}
+                    className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-indigo-400 focus:outline-none focus:border-indigo-500 transition-colors"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Height (px)</label>
+                  <input 
+                    type="number"
+                    value={objHeight}
+                    onChange={(e) => handleSizeChange('height', parseInt(e.target.value) || 1)}
+                    className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-indigo-400 focus:outline-none focus:border-indigo-500 transition-colors"
                   />
                 </div>
               </div>
-            )}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Position X</label>
+                  <input 
+                    type="number"
+                    value={objLeft}
+                    onChange={(e) => handlePositionChange('left', parseInt(e.target.value) || 0)}
+                    className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-slate-300 focus:outline-none focus:border-indigo-500 transition-colors"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Position Y</label>
+                  <input 
+                    type="number"
+                    value={objTop}
+                    onChange={(e) => handlePositionChange('top', parseInt(e.target.value) || 0)}
+                    className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-slate-300 focus:outline-none focus:border-indigo-500 transition-colors"
+                  />
+                </div>
+              </div>
+            </div>
 
-            {isText && (
+            <div className="space-y-4 border-t border-slate-800 pt-4">
+              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                <Palette size={12} />
+                Appearance & Fill
+              </h4>
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] text-slate-500 font-bold uppercase">Font & Color</label>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 h-9 bg-slate-800 rounded-md flex items-center px-3 border border-slate-700">
-                       <Type size={14} className="text-slate-500 mr-2" />
-                       <span className="text-[11px] text-slate-300">Inter</span>
-                       <ChevronRight size={14} className="ml-auto text-slate-500" />
-                    </div>
-                    <div className="w-9 h-9 rounded-md border border-slate-700 bg-slate-800 relative overflow-hidden shrink-0">
-                      <input 
-                        type="color" 
-                        onChange={(e) => updateObjectProperty('fill', e.target.value)}
-                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                        value={typeof selectedObject.fill === 'string' ? selectedObject.fill : '#ffffff'}
-                      />
-                      <div className="w-full h-full" style={{ backgroundColor: typeof selectedObject.fill === 'string' ? selectedObject.fill : '#ffffff' }} />
+                {(isText || isShape) && !isPath && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Fill Color</label>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-9 bg-slate-800 rounded-md flex items-center px-3 border border-slate-700">
+                        <Palette size={14} className="text-slate-500 mr-2" />
+                        <span className="text-[11px] text-slate-300 font-mono uppercase truncate">
+                          {typeof selectedObject.fill === 'string' ? selectedObject.fill : 'Gradient/Other'}
+                        </span>
+                      </div>
+                      <div className="w-9 h-9 rounded-md border border-slate-700 bg-slate-800 relative overflow-hidden shrink-0">
+                        <input 
+                          type="color" 
+                          onChange={(e) => {
+                             const hex = e.target.value;
+                             const color = new fabric.Color(hex);
+                             color.setAlpha(objOpacity / 100);
+                             updateObjectProperty('fill', color.toRgba());
+                          }}
+                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                          value={typeof selectedObject.fill === 'string' ? new fabric.Color(selectedObject.fill).toHex().substring(0, 7) : '#ffffff'}
+                        />
+                        <div className="w-full h-full" style={{ backgroundColor: typeof selectedObject.fill === 'string' ? selectedObject.fill : '#ffffff' }} />
+                      </div>
                     </div>
                   </div>
+                )}
+                
+                {isText && (
+                   <div className="space-y-2 pt-2 border-t border-slate-800/50">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] text-slate-500 font-bold uppercase ml-1 flex items-center gap-1.5">
+                           <Highlighter size={12} />
+                           Text Background
+                        </label>
+                        <button
+                          onClick={() => {
+                             if (hasTextBg) {
+                               updateObjectProperty('backgroundColor', '');
+                             } else {
+                               updateObjectProperty('backgroundColor', '#000000'); 
+                             }
+                          }}
+                          className={`p-1 rounded transition-colors ${hasTextBg ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-600 hover:text-slate-400'}`}
+                        >
+                          {hasTextBg ? <Check size={14} /> : <Plus size={14} />}
+                        </button>
+                      </div>
+                      
+                      {hasTextBg && (
+                        <div className="flex items-center gap-3 animate-in slide-in-from-top-1">
+                           <div className="flex-1 h-9 bg-slate-800 rounded-md flex items-center px-3 border border-slate-700">
+                              <div className="w-4 h-4 rounded-sm border border-slate-600 mr-2" style={{ backgroundColor: currentTextBg as string }} />
+                              <span className="text-[11px] text-slate-300 font-mono uppercase truncate">
+                                {currentTextBg as string}
+                              </span>
+                           </div>
+                           <div className="w-9 h-9 rounded-md border border-slate-700 bg-slate-800 relative overflow-hidden shrink-0">
+                              <input 
+                                type="color" 
+                                onChange={(e) => updateObjectProperty('backgroundColor', e.target.value)}
+                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                value={new fabric.Color(currentTextBg as string).toHex().substring(0, 7)}
+                              />
+                              <div className="w-full h-full" style={{ backgroundColor: currentTextBg as string }} />
+                           </div>
+                        </div>
+                      )}
+                   </div>
+                )}
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold px-1">
+                    <span className="flex items-center gap-1.5"><Ghost size={10} /> {isImage ? 'Global Opacity' : (isPath ? 'Stroke Opacity' : 'Fill Opacity')}</span>
+                    <span className="font-mono text-indigo-400">{objOpacity}%</span>
+                  </div>
+                  <input 
+                    type="range" min="0" max="100" step="1" 
+                    value={objOpacity}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (isImage) {
+                        updateObjectProperty('opacity', val / 100);
+                      } else {
+                        updateFillAlpha(val / 100);
+                      }
+                    }}
+                    className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                  />
+                  {!isImage && (
+                    <p className="text-[9px] text-slate-500 font-medium px-1">This transparency only applies to the background fill color, not the border.</p>
+                  )}
                 </div>
+
+                {(isImage || (isShape && !isPath)) && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold px-1">
+                      <span>Corner Rounding</span>
+                      <span className="font-mono text-indigo-400">{currentRounding}px</span>
+                    </div>
+                    <input 
+                      type="range" min="0" max="200" step="1" 
+                      value={currentRounding}
+                      onChange={(e) => updateRounding(parseInt(e.target.value))}
+                      className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {isShape && (
+              <div className="space-y-4 border-t border-slate-800 pt-4">
+                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                  <SquareIcon size={12} />
+                  Stroke & Outline
+                </h4>
+                <div className="flex items-center gap-3">
+                    <div className="flex-1 space-y-1.5">
+                       <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Width</label>
+                       <input 
+                        type="number"
+                        min="0"
+                        value={isInsideShadow ? 0 : currentStrokeWidth}
+                        disabled={isInsideShadow}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          (selectedObject as any)._originalStrokeWidth = val;
+                          updateObjectProperty('strokeWidth', val);
+                        }}
+                        className={`w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-slate-300 focus:border-indigo-500 transition-colors ${isInsideShadow ? 'opacity-50 grayscale' : ''}`}
+                      />
+                    </div>
+                    <div className={`w-9 h-9 mt-4 rounded-md border border-slate-700 bg-slate-800 relative overflow-hidden shrink-0 ${isInsideShadow ? 'opacity-50 grayscale' : ''}`}>
+                      <input 
+                        type="color" 
+                        disabled={isInsideShadow}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          (selectedObject as any)._originalStroke = val;
+                          updateObjectProperty('stroke', val);
+                        }}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        value={typeof currentStroke === 'string' ? new fabric.Color(currentStroke).toHex().substring(0, 7) : '#ffffff'}
+                      />
+                      <div className="w-full h-full" style={{ backgroundColor: typeof currentStroke === 'string' ? currentStroke : '#ffffff' }} />
+                    </div>
+                </div>
+                {isInsideShadow && (
+                  <p className="text-[9px] text-indigo-400/60 font-medium leading-tight">Stroke settings are disabled while Inside Glow is active as they share properties.</p>
+                )}
               </div>
             )}
 
-            {/* Object Shadow/Glow Section */}
             <div className="space-y-6 border-t border-slate-800 pt-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
@@ -340,7 +614,12 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                   onClick={() => {
                     const hasAny = currentShadow || isInsideShadow;
                     if (hasAny) {
-                      selectedObject.set({ shadow: null, stroke: 'transparent', strokeWidth: 0, clipPath: selectedObject.type === 'image' ? getObjectClipPath(selectedObject) : null });
+                      selectedObject.set({ 
+                        shadow: null, 
+                        stroke: (selectedObject as any)._originalStroke || 'transparent', 
+                        strokeWidth: (selectedObject as any)._originalStrokeWidth || 0,
+                        clipPath: null 
+                      });
                       (selectedObject as any)._isInsideShadow = false;
                       fabricCanvas?.renderAll();
                       onObjectChange?.();
@@ -454,8 +733,8 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
 
       <div className="p-4 bg-slate-950/50 border-t border-slate-800 shrink-0">
         <div className="p-4 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 text-[11px] text-slate-400 leading-relaxed shadow-inner">
-          <p className="font-bold text-indigo-300 mb-2 uppercase tracking-wide">Inner Glow Logic</p>
-          {isInsideShadow ? "The glow is restricted to the inside using a clipPath. Adjust 'Intensity' to grow the inner stroke." : "Outer shadows cast a classic drop shadow that renders outside the object's path."}
+          <p className="font-bold text-indigo-300 mb-2 uppercase tracking-wide">Refined Transparency</p>
+          <p>The Opacity slider now targets the <b>Fill Color</b> specifically for shapes and text, allowing your outlines to stay crisp and fully opaque.</p>
         </div>
       </div>
     </aside>
