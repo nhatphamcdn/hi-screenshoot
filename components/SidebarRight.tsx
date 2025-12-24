@@ -42,6 +42,7 @@ interface SidebarRightProps {
   fabricCanvas: fabric.Canvas | null;
   onObjectChange?: () => void;
   refresh: number;
+  onClose?: () => void; // Added for mobile close button
 }
 
 const DebouncedNumberInput = ({ 
@@ -98,7 +99,7 @@ const DebouncedNumberInput = ({
     );
 };
 
-const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedObject, fabricCanvas, onObjectChange, refresh }) => {
+const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedObject, fabricCanvas, onObjectChange, refresh, onClose }) => {
   const [activeTab, setActiveTab] = useState<'scene' | 'layers' | 'properties'>('scene');
   const [lockAspect, setLockAspect] = useState(true);
   const [layers, setLayers] = useState<fabric.FabricObject[]>([]);
@@ -412,7 +413,15 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
   const displayLayers = [...layers].reverse();
 
   return (
-    <aside className="w-80 bg-zinc-900 border-l border-zinc-800 flex flex-col z-40 overflow-y-auto custom-scrollbar">
+    <aside className="w-full h-full bg-zinc-900 border-l border-zinc-800 flex flex-col z-40 overflow-y-auto custom-scrollbar">
+      {/* Mobile Header */}
+      <div className="lg:hidden h-14 border-b border-zinc-800 flex items-center justify-between px-4 shrink-0">
+         <span className="font-bold text-zinc-300">Settings</span>
+         <button onClick={onClose} className="p-2 text-zinc-400 hover:text-white">
+            <ArrowRight size={20} />
+         </button>
+      </div>
+
       <div className="flex border-b border-zinc-800 h-12 shrink-0">
         <button 
           onClick={() => { handleDeselect(); setActiveTab('scene'); }}
@@ -437,7 +446,8 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
           Edit
         </button>
       </div>
-
+      
+      {/* Rest of the component content */}
       <div className="p-6 space-y-8 flex-1">
         {activeTab === 'scene' && (
           <>

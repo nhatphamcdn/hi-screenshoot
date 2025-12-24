@@ -48,8 +48,32 @@ const App: React.FC = () => {
   const [aiTransparentBg, setAiTransparentBg] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Responsive Sidebar State
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const activeToolRef = useRef<DrawingTool>('none');
+
+  // Auto-hide sidebar on mobile initially
+  useEffect(() => {
+    const handleResize = () => {
+        if (window.innerWidth < 1024) {
+            setIsSidebarOpen(false);
+        } else {
+            setIsSidebarOpen(true);
+        }
+    };
+    
+    // Set initial state based on current width
+    if (window.innerWidth < 1024) {
+        setIsSidebarOpen(false);
+    }
+
+    // Optional: Auto-collapse when resizing from desktop to mobile
+    // Not strictly necessary but good for UX testing
+    // window.addEventListener('resize', handleResize);
+    // return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   useEffect(() => {
     activeToolRef.current = activeTool;
@@ -125,8 +149,8 @@ const App: React.FC = () => {
     const updateScale = () => {
       if (!containerRef.current) return;
 
-      const viewportWidth = containerRef.current.clientWidth - 100; 
-      const viewportHeight = containerRef.current.clientHeight - 100;
+      const viewportWidth = containerRef.current.clientWidth - 50; 
+      const viewportHeight = containerRef.current.clientHeight - 50;
 
       const effectiveW = editorState.customWidth || canvasDimensions.width;
       const effectiveH = editorState.customHeight || canvasDimensions.height;
@@ -143,7 +167,7 @@ const App: React.FC = () => {
     updateScale();
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
-  }, [canvasDimensions, editorState.padding, editorState.customWidth, editorState.customHeight, hasImage]);
+  }, [canvasDimensions, editorState.padding, editorState.customWidth, editorState.customHeight, hasImage, isSidebarOpen]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -853,6 +877,8 @@ const App: React.FC = () => {
         aiTransparentBg={aiTransparentBg}
         onToggleAiTransparentBg={() => setAiTransparentBg(prev => !prev)}
         onReset={handleReset}
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        isSidebarOpen={isSidebarOpen}
       />
       
       <input 
@@ -864,10 +890,8 @@ const App: React.FC = () => {
         onChange={handleFileUpload} 
       />
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* SidebarLeft removed */}
-
-        <main ref={containerRef} className="flex-1 flex flex-col items-center justify-center bg-zinc-900 overflow-hidden relative">
+      <div className="flex flex-1 overflow-hidden relative">
+        <main ref={containerRef} className="flex-1 flex flex-col items-center justify-center bg-zinc-900 overflow-hidden relative p-4 pb-24 md:pb-4 md:p-6">
           
           <div 
             id="canvas-wrapper" 
@@ -915,7 +939,7 @@ const App: React.FC = () => {
           {!hasImage && (
             <div 
               onClick={() => fileInputRef.current?.click()}
-              className="w-full max-w-lg aspect-video rounded-3xl border-2 border-dashed border-zinc-700 bg-zinc-800/40 hover:bg-zinc-800/60 hover:border-primary-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-5 group"
+              className="w-full max-w-lg aspect-video rounded-3xl border-2 border-dashed border-zinc-700 bg-zinc-800/40 hover:bg-zinc-800/60 hover:border-primary-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-5 group mx-4"
             >
               <div className="w-20 h-20 rounded-2xl bg-zinc-700/50 group-hover:bg-primary-600/20 flex items-center justify-center transition-all group-hover:scale-110">
                 <Upload size={36} className="text-zinc-400 group-hover:text-primary-400" />
@@ -928,25 +952,41 @@ const App: React.FC = () => {
           )}
           
           {hasImage && (
-            <div className="absolute bottom-8 px-6 py-3 bg-zinc-950/80 backdrop-blur-2xl rounded-2xl text-[11px] text-zinc-400 border border-zinc-800 shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4">
+            <div className="absolute bottom-28 md:bottom-8 px-6 py-3 bg-zinc-950/80 backdrop-blur-2xl rounded-2xl text-[11px] text-zinc-400 border border-zinc-800 shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 mx-4 pointer-events-none">
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="font-bold text-zinc-200 uppercase tracking-tighter">Multi-Object Canvas Active</span>
+                <span className="font-bold text-zinc-200 uppercase tracking-tighter">Canvas Active</span>
               </div>
-              <div className="w-px h-4 bg-zinc-800" />
-              <span>Composition mode enabled</span>
+              <div className="w-px h-4 bg-zinc-800 hidden sm:block" />
+              <span className="hidden sm:inline">Composition mode enabled</span>
             </div>
           )}
         </main>
+        
+        {/* Backdrop for Mobile */}
+        {isSidebarOpen && (
+           <div 
+             className="absolute inset-0 bg-black/50 z-[60] lg:hidden backdrop-blur-sm animate-in fade-in duration-200" 
+             onClick={() => setIsSidebarOpen(false)} 
+           />
+        )}
 
-        <SidebarRight 
-          state={editorState} 
-          setState={setEditorState} 
-          selectedObject={selectedObject}
-          fabricCanvas={fabricCanvasRef.current}
-          onObjectChange={forceRefresh}
-          refresh={refresh}
-        />
+        {/* Collapsible Sidebar Container */}
+        <div className={`
+             fixed inset-y-0 right-0 z-[60] h-full w-80 bg-zinc-900 border-l border-zinc-800 shadow-2xl transform transition-all duration-300 ease-in-out
+             lg:relative lg:shadow-none lg:translate-x-0 lg:z-40
+             ${isSidebarOpen ? 'translate-x-0 lg:w-80' : 'translate-x-full lg:w-0 lg:overflow-hidden'}
+        `}>
+             <SidebarRight 
+              state={editorState} 
+              setState={setEditorState} 
+              selectedObject={selectedObject}
+              fabricCanvas={fabricCanvasRef.current}
+              onObjectChange={forceRefresh}
+              refresh={refresh}
+              onClose={() => setIsSidebarOpen(false)}
+            />
+        </div>
       </div>
     </div>
   );
