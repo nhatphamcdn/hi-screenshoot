@@ -8,7 +8,8 @@ import {
   Circle as CircleIcon,
   Trash2,
   Share2,
-  ArrowRight
+  ArrowRight,
+  Sparkles
 } from 'lucide-react';
 
 interface ToolbarProps {
@@ -19,6 +20,8 @@ interface ToolbarProps {
   onExport: () => void;
   onDelete: () => void;
   hasSelection: boolean;
+  selectionType?: string;
+  onGenerateImage?: () => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({ 
@@ -28,8 +31,12 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onSetTool, 
   onExport, 
   onDelete, 
-  hasSelection 
+  hasSelection,
+  selectionType,
+  onGenerateImage
 }) => {
+  const isImageSelected = hasSelection && selectionType === 'image';
+
   return (
     <header className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-6 z-50">
       <div className="flex items-center gap-6">
@@ -52,6 +59,15 @@ const Toolbar: React.FC<ToolbarProps> = ({
             <Plus size={18} />
             <span>Upload</span>
           </button>
+           {onGenerateImage && (
+            <button 
+              onClick={onGenerateImage}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm font-medium border ${isImageSelected ? 'bg-indigo-600/10 border-indigo-500/50 text-indigo-300 hover:bg-indigo-600/20' : 'hover:bg-indigo-900/30 text-indigo-300 border-indigo-500/20'}`}
+            >
+              <Sparkles size={16} className={isImageSelected ? 'fill-indigo-500/20' : ''} />
+              <span>{isImageSelected ? 'AI Edit' : 'AI Gen'}</span>
+            </button>
+          )}
           <button 
             onClick={onAddText}
             className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-slate-800 text-slate-300 transition-colors text-sm font-medium"

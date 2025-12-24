@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import * as fabric from 'fabric';
+import { GoogleGenAI } from "@google/genai";
 import { 
   Download, 
   Image as ImageIcon, 
@@ -8,7 +9,9 @@ import {
   Circle as CircleIcon,
   Trash2,
   Upload,
-  ArrowRight
+  ArrowRight,
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 import SidebarLeft from './components/SidebarLeft';
 import SidebarRight from './components/SidebarRight';
@@ -28,6 +31,7 @@ const App: React.FC = () => {
   const [hasImage, setHasImage] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
+  const [isGenerating, setIsGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeToolRef = useRef<DrawingTool>('none');
@@ -290,10 +294,71 @@ const App: React.FC = () => {
     };
   }, []);
 
+  const addImageObjectToCanvas = (imgObj: HTMLImageElement, isInitial: boolean) => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas) return;
+
+    const fabricImg = new fabric.FabricImage(imgObj);
+    
+    let scale = 1;
+
+    if (isInitial && !editorState.customWidth) {
+      const maxW = 1000; 
+      const maxH = 800;
+      scale = Math.min(maxW / fabricImg.width!, maxH / fabricImg.height!, 1);
+      const finalWidth = fabricImg.width! * scale;
+      const finalHeight = fabricImg.height! * scale;
+
+      // Remove fixed buffer so canvas fits image exactly
+      const canvasW = finalWidth;
+      const canvasH = finalHeight;
+
+      canvas.setDimensions({ width: canvasW, height: canvasH });
+      setCanvasDimensions({ width: canvasW, height: canvasH });
+      
+      fabricImg.set({
+        left: 0,
+        top: 0,
+        scaleX: scale,
+        scaleY: scale,
+      });
+      setHasImage(true);
+    } else {
+      const canvasW = canvas.width;
+      const canvasH = canvas.height;
+      const targetW = canvasW * 0.6;
+      const targetH = canvasH * 0.6;
+      
+      scale = Math.min(targetW / fabricImg.width!, targetH / fabricImg.height!, 1);
+      
+      fabricImg.set({
+        left: (canvasW - (fabricImg.width! * scale)) / 2,
+        top: (canvasH - (fabricImg.height! * scale)) / 2,
+        scaleX: scale,
+        scaleY: scale,
+      });
+      setHasImage(true);
+    }
+
+    fabricImg.set({
+      selectable: true,
+      evented: true, 
+      shadow: new fabric.Shadow({
+        color: `rgba(0, 0, 0, ${editorState.shadowOpacity})`,
+        blur: editorState.shadowBlur,
+        offsetY: 10,
+      })
+    });
+
+    canvas.add(fabricImg);
+    canvas.setActiveObject(fabricImg);
+    canvas.renderAll();
+    forceRefresh();
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    const canvas = fabricCanvasRef.current;
-    if (!files || files.length === 0 || !canvas) return;
+    if (!files || files.length === 0) return;
 
     (Array.from(files) as File[]).forEach((file, index) => {
       const reader = new FileReader();
@@ -303,63 +368,9 @@ const App: React.FC = () => {
         
         const imgObj = new Image();
         imgObj.onload = () => {
-          const fabricImg = new fabric.FabricImage(imgObj);
-          
-          let scale = 1;
-
-          if (!hasImage && index === 0 && !editorState.customWidth) {
-            const maxW = 1000; 
-            const maxH = 800;
-            scale = Math.min(maxW / fabricImg.width!, maxH / fabricImg.height!, 1);
-            const finalWidth = fabricImg.width! * scale;
-            const finalHeight = fabricImg.height! * scale;
-
-            // Remove fixed buffer so canvas fits image exactly
-            const canvasW = finalWidth;
-            const canvasH = finalHeight;
-
-            canvas.setDimensions({ width: canvasW, height: canvasH });
-            setCanvasDimensions({ width: canvasW, height: canvasH });
-            
-            fabricImg.set({
-              left: 0,
-              top: 0,
-              scaleX: scale,
-              scaleY: scale,
-            });
-            setHasImage(true);
-          } else {
-            const canvasW = canvas.width;
-            const canvasH = canvas.height;
-            const targetW = canvasW * 0.6;
-            const targetH = canvasH * 0.6;
-            
-            scale = Math.min(targetW / fabricImg.width!, targetH / fabricImg.height!, 1);
-            
-            const offset = (index + 1) * 30;
-            fabricImg.set({
-              left: (canvasW - (fabricImg.width! * scale)) / 2 + offset,
-              top: (canvasH - (fabricImg.height! * scale)) / 2 + offset,
-              scaleX: scale,
-              scaleY: scale,
-            });
-            setHasImage(true);
-          }
-
-          fabricImg.set({
-            selectable: true,
-            evented: true, // Ensure uploaded images are interactive by default
-            shadow: new fabric.Shadow({
-              color: `rgba(0, 0, 0, ${editorState.shadowOpacity})`,
-              blur: editorState.shadowBlur,
-              offsetY: 10,
-            })
-          });
-
-          canvas.add(fabricImg);
-          canvas.setActiveObject(fabricImg);
-          canvas.renderAll();
-          forceRefresh();
+          // Check if this is the very first image being added to a blank canvas
+          const isInitial = !hasImage && index === 0;
+          addImageObjectToCanvas(imgObj, isInitial);
         };
         imgObj.src = result;
       };
@@ -367,6 +378,113 @@ const App: React.FC = () => {
     });
 
     e.target.value = '';
+  };
+
+  const handleGenerateImage = async () => {
+    // START LOADING IMMEDIATELY
+    setIsGenerating(true);
+
+    // Give React a moment to render the loader before potential heavy work
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Refined prompt to preserve object identity while strictly removing background/border and ensuring high quality
+    const promptText = "Edit the provided reference image. Keep the terracotta pots exactly the same in shape, color, texture, and position. Remove the rounded border/frame completely. Replace the background with pure white (#FFFFFF). No shadows added to the background. Ultra-high-resolution 8K output, sharp focus, photorealistic. No changes to product design, no additional objects.";
+
+    // Logic to find an image even if not currently selected
+    let targetImage = selectedObject;
+    
+    // If no object selected, or selected object is not an image, try to find one on canvas
+    if (!targetImage || targetImage.type !== 'image') {
+        const canvas = fabricCanvasRef.current;
+        if (canvas) {
+            const images = canvas.getObjects().filter(obj => obj.type === 'image');
+            if (images.length > 0) {
+                targetImage = images[images.length - 1]; // Use the top-most image
+            }
+        }
+    }
+
+    const isEditing = targetImage && targetImage.type === 'image';
+    
+    try {
+       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+       
+       const parts: any[] = [];
+
+       if (isEditing && targetImage) {
+           // For Image-to-Image editing
+           // We extract the base64 from the image object
+           const dataUrl = targetImage.toDataURL({ format: 'png' });
+           const base64Data = dataUrl.split(',')[1];
+           
+           parts.push({
+               inlineData: {
+                   data: base64Data,
+                   mimeType: 'image/png'
+               }
+           });
+       }
+
+       parts.push({ text: promptText });
+
+       // Switch back to gemini-2.5-flash-image per user request
+       const response = await ai.models.generateContent({
+           model: 'gemini-2.5-flash-image',
+           contents: {
+               parts: parts
+           },
+           config: {
+               // Removed imageSize: '4K' as it is not supported by Flash Image
+               imageConfig: {
+                   aspectRatio: '1:1'
+               }
+           }
+       });
+
+       // Extract the image from the response parts
+       let foundImage = false;
+       if (response.candidates && response.candidates[0].content && response.candidates[0].content.parts) {
+         for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData) {
+                const base64Str = part.inlineData.data;
+                const imgSrc = `data:image/png;base64,${base64Str}`;
+                
+                const imgObj = new Image();
+                imgObj.onload = () => {
+                   // Add generated image to canvas
+                   addImageObjectToCanvas(imgObj, !hasImage);
+                };
+                imgObj.src = imgSrc;
+                foundImage = true;
+                break;
+            }
+         }
+       }
+
+       if (!foundImage) {
+         console.warn("API Response did not contain inlineData image.");
+         alert("No image generated. Please try again.");
+       }
+
+    } catch (e: any) {
+        console.error("AI Generation Error:", e);
+        
+        const errorMessage = e.message || JSON.stringify(e);
+        // Handle potential permission errors if environment key is invalid
+        const isPermissionDenied = 
+            e.status === 403 || 
+            errorMessage.includes('403') || 
+            errorMessage.includes('PERMISSION_DENIED');
+        
+        if (isPermissionDenied && (window as any).aistudio) {
+             await (window as any).aistudio.openSelectKey(); 
+             alert("Please select a valid paid project API key and try again.");
+        } else {
+             alert("Image generation failed. " + errorMessage);
+        }
+    } finally {
+        setIsGenerating(false);
+    }
   };
 
   const handleApplyTemplate = (template: Template) => {
@@ -421,6 +539,21 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-slate-950 text-slate-200 overflow-hidden">
+      {isGenerating && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-300">
+           <div className="bg-slate-900 border border-slate-700 p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full mx-4">
+               <div className="relative">
+                 <div className="absolute inset-0 bg-indigo-500/20 blur-xl rounded-full"></div>
+                 <Loader2 size={48} className="text-indigo-400 animate-spin relative z-10" />
+               </div>
+               <div className="text-center space-y-2">
+                 <h3 className="text-xl font-bold text-white">Generating Image</h3>
+                 <p className="text-slate-400 text-sm">Processing with AI...</p>
+               </div>
+           </div>
+        </div>
+      )}
+
       <Toolbar 
         onUpload={() => fileInputRef.current?.click()}
         onAddText={addText}
@@ -429,6 +562,8 @@ const App: React.FC = () => {
         onExport={handleExport}
         onDelete={deleteSelected}
         hasSelection={!!selectedObject}
+        selectionType={selectedObject?.type}
+        onGenerateImage={handleGenerateImage}
       />
       
       <input 
@@ -471,7 +606,7 @@ const App: React.FC = () => {
               </div>
               <div className="text-center px-6">
                 <p className="text-xl font-bold text-slate-200">Snap a Screenshot Here</p>
-                <p className="text-sm text-slate-500 mt-2">Upload one or more images to start creating professional layouts</p>
+                <p className="text-sm text-slate-500 mt-2">Upload images or <span className="text-indigo-400 font-bold hover:underline" onClick={(e) => { e.stopPropagation(); handleGenerateImage(); }}>generate with AI</span></p>
               </div>
             </div>
           )}
