@@ -179,8 +179,8 @@ const App: React.FC = () => {
       const commonProps = {
         left: pointer.x,
         top: pointer.y,
-        fill: '#6366f1',
-        stroke: '#4f46e5',
+        fill: '#a21621',
+        stroke: '#82111a',
         strokeWidth: 2,
         strokeUniform: true,
         selectable: false,
@@ -205,7 +205,7 @@ const App: React.FC = () => {
           ...commonProps,
           fill: 'transparent',
           strokeWidth: 4,
-          stroke: '#6366f1'
+          stroke: '#a21621'
         });
       }
 
@@ -285,7 +285,7 @@ const App: React.FC = () => {
         const pathData = `M ${x1} ${y1} L ${x2} ${y2} M ${x2} ${y2} L ${xLeft} ${yLeft} M ${x2} ${y2} L ${xRight} ${yRight}`;
 
         const arrow = new fabric.Path(pathData, {
-          stroke: '#6366f1',
+          stroke: '#a21621',
           strokeWidth: 4,
           fill: 'transparent',
           strokeCap: 'round',
@@ -295,7 +295,7 @@ const App: React.FC = () => {
         });
 
         // Store original stroke props for Sidebar logic
-        (arrow as any)._originalStroke = '#6366f1';
+        (arrow as any)._originalStroke = '#a21621';
         (arrow as any)._originalStrokeWidth = 4;
         
         // Tag as arrow for sidebar editing
@@ -780,8 +780,8 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-300">
            <div className="bg-slate-900 border border-slate-700 p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full mx-4">
                <div className="relative">
-                 <div className="absolute inset-0 bg-indigo-500/20 blur-xl rounded-full"></div>
-                 <Loader2 size={48} className="text-indigo-400 animate-spin relative z-10" />
+                 <div className="absolute inset-0 bg-primary-500/20 blur-xl rounded-full"></div>
+                 <Loader2 size={48} className="text-primary-400 animate-spin relative z-10" />
                </div>
                <div className="text-center space-y-2">
                  <h3 className="text-xl font-bold text-white">Generating Image</h3>
@@ -839,7 +839,7 @@ const App: React.FC = () => {
                            className="absolute -right-5 top-1/2 -translate-y-1/2 w-4 h-16 cursor-ew-resize flex items-center justify-center group/handle hover:scale-110 transition-transform"
                            title="Drag to resize width"
                         >
-                            <div className="w-1.5 h-8 bg-slate-600/50 rounded-full group-hover/handle:bg-indigo-500 backdrop-blur-sm border border-white/10 transition-colors shadow-sm" />
+                            <div className="w-1.5 h-8 bg-slate-600/50 rounded-full group-hover/handle:bg-primary-500 backdrop-blur-sm border border-white/10 transition-colors shadow-sm" />
                         </div>
 
                         {/* Bottom Handle (Height) */}
@@ -848,7 +848,7 @@ const App: React.FC = () => {
                            className="absolute -bottom-5 left-1/2 -translate-x-1/2 h-4 w-16 cursor-ns-resize flex items-center justify-center group/handle hover:scale-110 transition-transform"
                            title="Drag to resize height"
                         >
-                             <div className="h-1.5 w-8 bg-slate-600/50 rounded-full group-hover/handle:bg-indigo-500 backdrop-blur-sm border border-white/10 transition-colors shadow-sm" />
+                             <div className="h-1.5 w-8 bg-slate-600/50 rounded-full group-hover/handle:bg-primary-500 backdrop-blur-sm border border-white/10 transition-colors shadow-sm" />
                         </div>
 
                         {/* Corner Handle (Both) */}
@@ -857,7 +857,7 @@ const App: React.FC = () => {
                            className="absolute -right-5 -bottom-5 w-6 h-6 cursor-nwse-resize flex items-center justify-center group/handle"
                            title="Drag to resize both"
                         >
-                             <div className="w-3 h-3 bg-white border-2 border-slate-600 rounded-full group-hover/handle:border-indigo-500 group-hover/handle:scale-125 transition-all shadow-md" />
+                             <div className="w-3 h-3 bg-white border-2 border-slate-600 rounded-full group-hover/handle:border-primary-500 group-hover/handle:scale-125 transition-all shadow-md" />
                         </div>
                     </>
                 )}
@@ -867,14 +867,14 @@ const App: React.FC = () => {
           {!hasImage && (
             <div 
               onClick={() => fileInputRef.current?.click()}
-              className="w-full max-w-lg aspect-video rounded-3xl border-2 border-dashed border-slate-700 bg-slate-800/40 hover:bg-slate-800/60 hover:border-indigo-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-5 group"
+              className="w-full max-w-lg aspect-video rounded-3xl border-2 border-dashed border-slate-700 bg-slate-800/40 hover:bg-slate-800/60 hover:border-primary-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-5 group"
             >
-              <div className="w-20 h-20 rounded-2xl bg-slate-700/50 group-hover:bg-indigo-600/20 flex items-center justify-center transition-all group-hover:scale-110">
-                <Upload size={36} className="text-slate-400 group-hover:text-indigo-400" />
+              <div className="w-20 h-20 rounded-2xl bg-slate-700/50 group-hover:bg-primary-600/20 flex items-center justify-center transition-all group-hover:scale-110">
+                <Upload size={36} className="text-slate-400 group-hover:text-primary-400" />
               </div>
               <div className="text-center px-6">
                 <p className="text-xl font-bold text-slate-200">Snap a Screenshot Here</p>
-                <p className="text-sm text-slate-500 mt-2">Upload images or <span className="text-indigo-400 font-bold hover:underline" onClick={(e) => { e.stopPropagation(); handleGenerateImage(); }}>generate with AI</span></p>
+                <p className="text-sm text-slate-500 mt-2">Upload images or <span className="text-primary-400 font-bold hover:underline" onClick={(e) => { e.stopPropagation(); handleGenerateImage(); }}>generate with AI</span></p>
               </div>
             </div>
           )}

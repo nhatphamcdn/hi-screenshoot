@@ -80,16 +80,16 @@ const Toolbar: React.FC<ToolbarProps> = ({
             <div className="flex items-center gap-1 bg-slate-800/50 rounded-md p-1 border border-slate-700/50 ml-2">
                 <button 
                   onClick={onGenerateImage}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded transition-colors text-sm font-medium ${isImageSelected ? 'bg-indigo-600/10 text-indigo-300 hover:bg-indigo-600/20' : 'hover:bg-slate-700 text-indigo-300'}`}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded transition-colors text-sm font-medium ${isImageSelected ? 'bg-primary-600/10 text-primary-300 hover:bg-primary-600/20' : 'hover:bg-slate-700 text-primary-300'}`}
                 >
-                  <Sparkles size={16} className={isImageSelected ? 'fill-indigo-500/20' : ''} />
+                  <Sparkles size={16} className={isImageSelected ? 'fill-primary-500/20' : ''} />
                   <span>{isImageSelected ? 'AI Edit' : 'AI Gen'}</span>
                 </button>
                 <div className="w-px h-4 bg-slate-700 mx-1"></div>
                 <button 
                   onClick={onToggleAiTransparentBg}
                   title={aiTransparentBg ? "Transparent Background: ON" : "Transparent Background: OFF"}
-                  className={`p-1.5 rounded transition-colors ${aiTransparentBg ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700'}`}
+                  className={`p-1.5 rounded transition-colors ${aiTransparentBg ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700'}`}
                 >
                   <Ghost size={16} />
                 </button>
@@ -104,21 +104,21 @@ const Toolbar: React.FC<ToolbarProps> = ({
           </button>
           <button 
             onClick={() => onSetTool('rect')}
-            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm font-medium ${activeTool === 'rect' ? 'bg-indigo-600/20 text-indigo-400' : 'hover:bg-slate-800 text-slate-300'}`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm font-medium ${activeTool === 'rect' ? 'bg-primary-600/20 text-primary-400' : 'hover:bg-slate-800 text-slate-300'}`}
           >
             <Square size={18} />
             <span>Rect</span>
           </button>
           <button 
             onClick={() => onSetTool('circle')}
-            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm font-medium ${activeTool === 'circle' ? 'bg-indigo-600/20 text-indigo-400' : 'hover:bg-slate-800 text-slate-300'}`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm font-medium ${activeTool === 'circle' ? 'bg-primary-600/20 text-primary-400' : 'hover:bg-slate-800 text-slate-300'}`}
           >
             <CircleIcon size={18} />
             <span>Circle</span>
           </button>
           <button 
             onClick={() => onSetTool('arrow')}
-            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm font-medium ${activeTool === 'arrow' ? 'bg-indigo-600/20 text-indigo-400' : 'hover:bg-slate-800 text-slate-300'}`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm font-medium ${activeTool === 'arrow' ? 'bg-primary-600/20 text-primary-400' : 'hover:bg-slate-800 text-slate-300'}`}
           >
             <ArrowRight size={18} />
             <span>Arrow</span>
@@ -138,7 +138,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
         )}
         <button 
           onClick={onExport}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md transition-all text-sm font-bold shadow-lg shadow-indigo-600/20"
+          className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-md transition-all text-sm font-bold shadow-lg shadow-primary-600/20"
         >
           <Download size={18} />
           <span>Export PNG</span>
