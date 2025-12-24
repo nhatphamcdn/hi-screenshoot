@@ -399,7 +399,7 @@ const App: React.FC = () => {
       top: 100,
       fontFamily: 'Inter',
       fontSize: 42,
-      fill: '#ffffff',
+      fill: '#000000',
       fontWeight: 'bold',
       textAlign: 'center'
     });
