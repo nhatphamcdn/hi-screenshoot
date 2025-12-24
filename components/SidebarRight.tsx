@@ -31,7 +31,8 @@ import {
   Eye,
   EyeOff,
   Image as ImageIcon,
-  Trash2
+  Trash2,
+  RefreshCw
 } from 'lucide-react';
 import { EditorState } from '../types';
 
@@ -104,6 +105,39 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
   const [lockAspect, setLockAspect] = useState(true);
   const [layers, setLayers] = useState<fabric.FabricObject[]>([]);
   const prevSelectedRef = useRef<fabric.FabricObject | null>(null);
+
+  // Gradient State
+  const [gradStart, setGradStart] = useState('#6366f1');
+  const [gradEnd, setGradEnd] = useState('#a855f7');
+  const [gradAngle, setGradAngle] = useState(135);
+
+  useEffect(() => {
+    if (state.backgroundGradient) {
+        const match = state.backgroundGradient.match(/linear-gradient\((\d+)deg,\s*(#[a-fA-F0-9]+)\s*0%,\s*(#[a-fA-F0-9]+)\s*100%\)/i);
+        if (match) {
+            setGradAngle(parseInt(match[1]));
+            setGradStart(match[2]);
+            setGradEnd(match[3]);
+        }
+    }
+  }, [state.backgroundGradient]);
+
+  const handleGradientChange = (type: 'start' | 'end' | 'angle', value: string | number) => {
+      let newStart = gradStart;
+      let newEnd = gradEnd;
+      let newAngle = gradAngle;
+
+      if (type === 'start') newStart = value as string;
+      if (type === 'end') newEnd = value as string;
+      if (type === 'angle') newAngle = value as number;
+
+      setGradStart(newStart);
+      setGradEnd(newEnd);
+      setGradAngle(newAngle);
+
+      const newGrad = `linear-gradient(${newAngle}deg, ${newStart} 0%, ${newEnd} 100%)`;
+      setState(s => ({ ...s, backgroundGradient: newGrad }));
+  };
 
   // Sync active tab with selection state
   useEffect(() => {
@@ -500,6 +534,46 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                         style={{ background: grad }}
                       />
                   ))}
+              </div>
+
+              {/* Custom Gradient Builder */}
+              <div className="space-y-3 pt-3 border-t border-zinc-800">
+                 <div className="flex items-center justify-between">
+                    <label className="text-[10px] text-zinc-500 font-bold uppercase">Custom Gradient</label>
+                    <span className="text-[10px] font-mono text-zinc-600">{gradAngle}°</span>
+                 </div>
+                 <div className="flex items-center gap-2">
+                    <div className="flex-1 h-8 bg-zinc-800 rounded border border-zinc-700 relative overflow-hidden flex items-center justify-center group">
+                        <input 
+                            type="color" 
+                            value={gradStart} 
+                            onChange={(e) => handleGradientChange('start', e.target.value)}
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        />
+                        <div className="w-4 h-4 rounded-full border border-zinc-500 shadow-sm" style={{ backgroundColor: gradStart }} />
+                    </div>
+
+                    <div className="flex-1">
+                        <input 
+                            type="range"
+                            min="0"
+                            max="360"
+                            value={gradAngle}
+                            onChange={(e) => handleGradientChange('angle', parseInt(e.target.value))}
+                            className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                        />
+                    </div>
+
+                    <div className="flex-1 h-8 bg-zinc-800 rounded border border-zinc-700 relative overflow-hidden flex items-center justify-center group">
+                        <input 
+                            type="color" 
+                            value={gradEnd} 
+                            onChange={(e) => handleGradientChange('end', e.target.value)}
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        />
+                         <div className="w-4 h-4 rounded-full border border-zinc-500 shadow-sm" style={{ backgroundColor: gradEnd }} />
+                    </div>
+                 </div>
               </div>
             </section>
 
