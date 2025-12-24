@@ -2,15 +2,14 @@ import React from 'react';
 import { 
   Plus, 
   Download, 
-  Image as ImageIcon, 
   Type, 
   Square, 
   Circle as CircleIcon,
-  Trash2,
-  ArrowRight,
-  Sparkles,
-  Ghost,
-  RotateCcw
+  Trash2, 
+  ArrowRight, 
+  Sparkles, 
+  Ghost, 
+  RotateCcw 
 } from 'lucide-react';
 
 interface ToolbarProps {
@@ -48,11 +47,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
     <header className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-6 z-50">
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-            <ImageIcon size={18} className="text-white" />
-          </div>
           <span className="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-            SnapStyle
+            Image Editor
           </span>
         </div>
 
