@@ -4,7 +4,7 @@ import {
   Download, 
   Type, 
   Square, 
-  Circle as CircleIcon,
+  Circle as CircleIcon, 
   Trash2, 
   ArrowRight, 
   Sparkles, 
@@ -21,6 +21,7 @@ interface ToolbarProps {
   onDelete: () => void;
   hasSelection: boolean;
   selectionType?: string;
+  hasImage?: boolean;
   onGenerateImage?: () => void;
   aiTransparentBg?: boolean;
   onToggleAiTransparentBg?: () => void;
@@ -36,6 +37,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onDelete, 
   hasSelection,
   selectionType,
+  hasImage = false,
   onGenerateImage,
   aiTransparentBg,
   onToggleAiTransparentBg,
@@ -83,7 +85,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                   className={`flex items-center gap-2 px-3 py-1.5 rounded transition-colors text-sm font-medium ${isImageSelected ? 'bg-primary-600/10 text-primary-300 hover:bg-primary-600/20' : 'hover:bg-slate-700 text-primary-300'}`}
                 >
                   <Sparkles size={16} className={isImageSelected ? 'fill-primary-500/20' : ''} />
-                  <span>{isImageSelected ? 'AI Edit' : 'AI Gen'}</span>
+                  <span>{hasImage ? 'Remove bg' : 'AI Gen'}</span>
                 </button>
                 <div className="w-px h-4 bg-slate-700 mx-1"></div>
                 <button 

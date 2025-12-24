@@ -848,6 +848,7 @@ const App: React.FC = () => {
         onDelete={deleteSelected}
         hasSelection={!!selectedObject}
         selectionType={selectedObject?.type}
+        hasImage={hasImage}
         onGenerateImage={handleGenerateImage}
         aiTransparentBg={aiTransparentBg}
         onToggleAiTransparentBg={() => setAiTransparentBg(prev => !prev)}
