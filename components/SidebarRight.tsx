@@ -19,7 +19,12 @@ import {
   Maximize2,
   Square as SquareIcon,
   Ghost,
-  Highlighter
+  Highlighter,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Italic,
+  Underline
 } from 'lucide-react';
 import { EditorState } from '../types';
 
@@ -443,6 +448,125 @@ const SidebarRight: React.FC<SidebarRightProps> = ({ state, setState, selectedOb
                 </div>
               </div>
             </div>
+
+            {isText && (
+              <section className="space-y-4 border-t border-slate-800 pt-4">
+                 <div className="flex justify-between items-center">
+                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                      <Type size={12} />
+                      Typography
+                    </h4>
+                 </div>
+
+                 <div className="space-y-4">
+                    {/* Font Family */}
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Font Family</label>
+                        <div className="relative">
+                          <select
+                              value={(selectedObject as any).fontFamily}
+                              onChange={(e) => updateObjectProperty('fontFamily', e.target.value)}
+                              className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] text-slate-300 focus:border-indigo-500 outline-none appearance-none cursor-pointer"
+                          >
+                              <option value="Inter">Inter</option>
+                              <option value="Arial">Arial</option>
+                              <option value="Helvetica">Helvetica</option>
+                              <option value="Times New Roman">Times New Roman</option>
+                              <option value="Courier New">Courier New</option>
+                              <option value="Georgia">Georgia</option>
+                              <option value="Verdana">Verdana</option>
+                          </select>
+                          <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 rotate-90 pointer-events-none" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                         {/* Font Size */}
+                         <div className="space-y-1.5">
+                              <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Size</label>
+                              <input 
+                                type="number"
+                                value={(selectedObject as any).fontSize}
+                                onChange={(e) => updateObjectProperty('fontSize', parseInt(e.target.value))}
+                                className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-indigo-400 focus:outline-none focus:border-indigo-500 transition-colors"
+                              />
+                        </div>
+                        
+                        {/* Font Weight */}
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Weight</label>
+                            <div className="relative">
+                              <select
+                                  value={(selectedObject as any).fontWeight}
+                                  onChange={(e) => updateObjectProperty('fontWeight', e.target.value)}
+                                  className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] text-slate-300 focus:border-indigo-500 outline-none appearance-none cursor-pointer"
+                              >
+                                  <option value="normal">Normal</option>
+                                  <option value="bold">Bold</option>
+                                  <option value="300">Light</option>
+                                  <option value="600">Semi Bold</option>
+                                  <option value="800">Extra Bold</option>
+                              </select>
+                              <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 rotate-90 pointer-events-none" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                         {/* Line Height */}
+                        <div className="space-y-1.5">
+                              <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Line Height</label>
+                              <input 
+                                type="number"
+                                step="0.1"
+                                min="0.5"
+                                max="3"
+                                value={(selectedObject as any).lineHeight}
+                                onChange={(e) => updateObjectProperty('lineHeight', parseFloat(e.target.value))}
+                                className="w-full h-9 bg-slate-800 border border-slate-700 rounded-md px-3 text-[11px] font-mono text-indigo-400 focus:outline-none focus:border-indigo-500 transition-colors"
+                              />
+                        </div>
+                         {/* Alignment */}
+                         <div className="space-y-1.5">
+                            <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Align</label>
+                            <div className="flex bg-slate-800 rounded-md border border-slate-700 h-9 p-1">
+                                {['left', 'center', 'right'].map((align) => (
+                                    <button
+                                        key={align}
+                                        onClick={() => updateObjectProperty('textAlign', align)}
+                                        className={`flex-1 rounded flex items-center justify-center transition-all ${
+                                            (selectedObject as any).textAlign === align 
+                                            ? 'bg-indigo-600 text-white shadow-sm' 
+                                            : 'text-slate-400 hover:text-slate-200'
+                                        }`}
+                                    >
+                                        {align === 'left' && <AlignLeft size={14} />}
+                                        {align === 'center' && <AlignCenter size={14} />}
+                                        {align === 'right' && <AlignRight size={14} />}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Style & Decoration */}
+                    <div className="flex gap-2 pt-1">
+                         <button
+                            onClick={() => updateObjectProperty('fontStyle', (selectedObject as any).fontStyle === 'italic' ? 'normal' : 'italic')}
+                            className={`flex-1 h-9 rounded-md border flex items-center justify-center text-[10px] font-bold transition-all uppercase tracking-wide ${(selectedObject as any).fontStyle === 'italic' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'}`}
+                         >
+                            <Italic size={14} className="mr-2"/> Italic
+                         </button>
+                          <button
+                            onClick={() => updateObjectProperty('underline', !(selectedObject as any).underline)}
+                            className={`flex-1 h-9 rounded-md border flex items-center justify-center text-[10px] font-bold transition-all uppercase tracking-wide ${(selectedObject as any).underline ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'}`}
+                         >
+                            <Underline size={14} className="mr-2"/> Underline
+                         </button>
+                    </div>
+                 </div>
+              </section>
+            )}
 
             <div className="space-y-4 border-t border-slate-800 pt-4">
               <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
