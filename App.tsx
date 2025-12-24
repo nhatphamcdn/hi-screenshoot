@@ -46,6 +46,7 @@ const App: React.FC = () => {
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiTransparentBg, setAiTransparentBg] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeToolRef = useRef<DrawingTool>('none');
@@ -384,11 +385,10 @@ const App: React.FC = () => {
     forceRefresh();
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    (Array.from(files) as File[]).forEach((file, index) => {
+  const processFiles = (files: FileList) => {
+    Array.from(files).forEach((file, index) => {
+      if (!file.type.startsWith('image/')) return;
+      
       const reader = new FileReader();
       reader.onload = (event) => {
         const result = event.target?.result;
@@ -404,8 +404,38 @@ const App: React.FC = () => {
       };
       reader.readAsDataURL(file);
     });
+  };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    processFiles(files);
     e.target.value = '';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set dragging to false if we're actually leaving the container
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      processFiles(files);
+    }
   };
 
   const handleGenerateImage = async () => {
@@ -775,7 +805,24 @@ const App: React.FC = () => {
   const currentHeight = editorState.customHeight || canvasDimensions.height || 300;
 
   return (
-    <div className="flex flex-col h-screen bg-slate-950 text-slate-200 overflow-hidden">
+    <div 
+      className="flex flex-col h-screen bg-slate-950 text-slate-200 overflow-hidden relative"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className="absolute inset-0 z-[60] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-8 transition-all animate-in fade-in duration-200 pointer-events-none">
+            <div className="w-full h-full border-4 border-dashed border-primary-500 rounded-3xl flex flex-col items-center justify-center gap-6">
+                 <div className="w-24 h-24 rounded-full bg-primary-500/20 flex items-center justify-center animate-bounce">
+                    <Upload size={48} className="text-primary-400" />
+                 </div>
+                 <h2 className="text-3xl font-bold text-white">Drop your image here</h2>
+                 <p className="text-slate-400 text-lg">Add to your canvas instantly</p>
+            </div>
+        </div>
+      )}
+
       {isGenerating && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-300">
            <div className="bg-slate-900 border border-slate-700 p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full mx-4">
