@@ -170,15 +170,27 @@ const Toolbar: React.FC<ToolbarProps> = ({
   return (
       <>
         <header className="h-16 bg-zinc-900 border-b border-zinc-800 flex items-center px-4 lg:px-6 z-50 shrink-0 relative justify-between">
-            {/* Left: Tools (Desktop Only) */}
-            <div className="hidden md:flex items-center gap-1 flex-1">
-                <ToolsGroup isMobile={false} />
+            {/* Desktop: Logo and Tools on the Left */}
+            <div className="hidden md:flex items-center gap-6">
+                 {/* Logo */}
+                <div className="flex flex-col items-center pointer-events-none select-none">
+                     <span className="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
+                        Image Editor
+                     </span>
+                </div>
+                
+                <div className="h-6 w-px bg-zinc-800" />
+
+                {/* Tools */}
+                <div className="flex items-center gap-1">
+                    <ToolsGroup isMobile={false} />
+                </div>
             </div>
 
-            {/* Center: Logo */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none">
+            {/* Mobile: Centered Logo */}
+            <div className="md:hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none">
                  <span className="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
-                    SnapStyle
+                    Image Editor
                  </span>
             </div>
 

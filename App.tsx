@@ -723,7 +723,7 @@ const App: React.FC = () => {
     // 8. Download
     const dataURL = exportCanvas.toDataURL('image/png');
     const link = document.createElement('a');
-    link.download = 'snapstyle-export.png';
+    link.download = 'image-editor-export.png';
     link.href = dataURL;
     link.click();
   };
