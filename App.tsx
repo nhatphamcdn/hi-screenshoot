@@ -11,7 +11,9 @@ import {
   Upload,
   ArrowRight,
   Sparkles,
-  Loader2
+  Loader2,
+  GripHorizontal,
+  GripVertical
 } from 'lucide-react';
 // SidebarLeft removed
 import SidebarRight from './components/SidebarRight';
@@ -730,6 +732,48 @@ const App: React.FC = () => {
      };
   };
 
+  const startResize = (e: React.MouseEvent, direction: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    
+    // We rely on editorState values as source of truth if set, otherwise canvas dimensions
+    const startW = editorState.customWidth || canvasDimensions.width || 400;
+    const startH = editorState.customHeight || canvasDimensions.height || 300;
+
+    const onMove = (moveEvent: MouseEvent) => {
+        // Adjust delta by zoom scale
+        const deltaX = (moveEvent.clientX - startX) / zoomScale;
+        const deltaY = (moveEvent.clientY - startY) / zoomScale;
+        
+        let newW = startW;
+        let newH = startH;
+
+        // Simple resizing logic - resize from bottom/right implies top/left anchor
+        if (direction.includes('e')) newW = Math.max(100, startW + deltaX);
+        if (direction.includes('s')) newH = Math.max(100, startH + deltaY);
+
+        // Update state - this will trigger useEffect to update canvas
+        setEditorState(prev => ({
+            ...prev,
+            customWidth: Math.round(newW),
+            customHeight: Math.round(newH)
+        }));
+    };
+
+    const onUp = () => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  const currentWidth = editorState.customWidth || canvasDimensions.width || 400;
+  const currentHeight = editorState.customHeight || canvasDimensions.height || 300;
+
   return (
     <div className="flex flex-col h-screen bg-slate-950 text-slate-200 overflow-hidden">
       {isGenerating && (
@@ -782,8 +826,42 @@ const App: React.FC = () => {
             className={`transition-all duration-300 ease-out relative ${!hasImage ? 'hidden' : 'block'}`}
             style={getContainerStyle()}
           >
-            {/* The actual Fabric canvas */}
-            <canvas ref={canvasRef} />
+            {/* The actual Fabric canvas needs to be wrapped for relative positioning of handles */}
+            <div className="relative" style={{ width: currentWidth, height: currentHeight }}>
+                <canvas ref={canvasRef} />
+                
+                {/* Resize Handles - Only show if hasImage */}
+                {hasImage && (
+                    <>
+                        {/* Right Handle (Width) */}
+                        <div 
+                           onMouseDown={(e) => startResize(e, 'e')}
+                           className="absolute -right-5 top-1/2 -translate-y-1/2 w-4 h-16 cursor-ew-resize flex items-center justify-center group/handle hover:scale-110 transition-transform"
+                           title="Drag to resize width"
+                        >
+                            <div className="w-1.5 h-8 bg-slate-600/50 rounded-full group-hover/handle:bg-indigo-500 backdrop-blur-sm border border-white/10 transition-colors shadow-sm" />
+                        </div>
+
+                        {/* Bottom Handle (Height) */}
+                        <div 
+                           onMouseDown={(e) => startResize(e, 's')}
+                           className="absolute -bottom-5 left-1/2 -translate-x-1/2 h-4 w-16 cursor-ns-resize flex items-center justify-center group/handle hover:scale-110 transition-transform"
+                           title="Drag to resize height"
+                        >
+                             <div className="h-1.5 w-8 bg-slate-600/50 rounded-full group-hover/handle:bg-indigo-500 backdrop-blur-sm border border-white/10 transition-colors shadow-sm" />
+                        </div>
+
+                        {/* Corner Handle (Both) */}
+                         <div 
+                           onMouseDown={(e) => startResize(e, 'se')}
+                           className="absolute -right-5 -bottom-5 w-6 h-6 cursor-nwse-resize flex items-center justify-center group/handle"
+                           title="Drag to resize both"
+                        >
+                             <div className="w-3 h-3 bg-white border-2 border-slate-600 rounded-full group-hover/handle:border-indigo-500 group-hover/handle:scale-125 transition-all shadow-md" />
+                        </div>
+                    </>
+                )}
+            </div>
           </div>
 
           {!hasImage && (
